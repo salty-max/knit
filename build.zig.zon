@@ -1,0 +1,16 @@
+.{
+    .name = .parsil_zig,
+    .version = "0.0.0",
+    .fingerprint = 0xb3f636eb95051f39,
+    .minimum_zig_version = "0.15.1",
+    .dependencies = .{},
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+        "test.zig",
+        "tests",
+        "README.md",
+        "LICENSE",
+    },
+}

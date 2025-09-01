@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    name: zig 0.15.1 (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Zig
+        uses: mlugg/setup-zig@v2
+        with:
+          version: 0.15.1
+
+      - name: Zig version
+        run: zig version
+
+      - name: Format
+        run: zig fmt --check .
+
+      - name: Build and run tests (native)
+        run: zig build test -freference-trace
+
+      - name: Cross-target compile tests (compile-only)
+        run: zig build test-all -freference-trace
