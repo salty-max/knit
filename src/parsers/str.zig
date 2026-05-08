@@ -7,10 +7,11 @@ const core = @import("../core.zig");
 /// advances the cursor by `target.len`. The slice is borrowed from
 /// the input — no allocation.
 ///
-/// On failure: returns `.UnexpectedEoF` if the input runs out before
-/// the literal is matched (cursor at the first mismatched byte), or
-/// `.ExpectedLiteral` if the prefix differs (cursor at the start
-/// position).
+/// On failure: emits a `ParseError` with `parser = "str"`. If the
+/// input runs out before the literal is matched, the error's
+/// `expected` is `target` and `actual` is the consumed prefix.
+/// If the prefix differs, the error sits at the start position
+/// with `expected = target` and `actual` is the candidate slice.
 ///
 /// Example:
 /// ```zig
@@ -24,12 +25,23 @@ pub fn str(comptime target: []const u8) core.Parser([]const u8) {
             if (rem.len < target.len) {
                 var matched: usize = 0;
                 while (matched < rem.len and rem[matched] == target[matched]) : (matched += 1) {}
-                return .{ .err = .{ .index = state.index + matched, .msg = "unexpected end of input", .tag = .UnexpectedEoF } };
+                return .{ .err = core.parseError(
+                    "str",
+                    state.index + matched,
+                    "unexpected end of input",
+                    .{ .expected = target, .actual = rem },
+                ) };
             }
 
             const cand = rem[0..target.len];
-            if (!std.mem.eql(u8, cand, target))
-                return .{ .err = .{ .index = state.index, .msg = "expected literal", .tag = .ExpectedLiteral } };
+            if (!std.mem.eql(u8, cand, target)) {
+                return .{ .err = core.parseError(
+                    "str",
+                    state.index,
+                    "expected literal",
+                    .{ .expected = target, .actual = cand },
+                ) };
+            }
 
             state.advance(target.len);
             return .{ .ok = .{ .value = cand, .index = state.index } };

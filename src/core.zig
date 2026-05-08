@@ -1,25 +1,103 @@
 const std = @import("std");
 
-/// Categorical tag attached to every `ParseError`.
+/// Structured failure payload returned by every parser primitive.
 ///
-/// Phase 1 #19 will replace this with a richer `parser` identity field.
-/// Until then, three coarse categories cover the current parser set.
-pub const ParseErrorTag = enum {
-    UnexpectedEoF,
-    ExpectedLiteral,
-    Custom,
+/// Mirrors parsil-TS 3.0's `ParseError` shape so consumers can branch
+/// on `parser` identity, read `expected`/`actual` directly, and walk
+/// `context` without parsing strings.
+///
+/// String fields (`parser`, `message`, entries of `context`,
+/// `expected`, `actual`) carry borrowed references — primitives emit
+/// string literals (which outlive any parse), so no allocation is
+/// required for the basic shape. Phase 1 #20 introduces an arena
+/// allocator that owns dynamic context slices when `inContext`
+/// (#25) wraps a child parser.
+pub const ParseError = struct {
+    /// Machine-readable identity of the emitting parser
+    /// (`"char"`, `"str"`, `"keyword"`, …).
+    parser: []const u8,
+
+    /// Byte offset where the parser refused.
+    index: usize,
+
+    /// User-readable description, English-only. No `ParseError @ index N -> X:`
+    /// prefix — that's `formatParseError`'s job.
+    message: []const u8,
+
+    /// What the parser was looking for, when known.
+    expected: ?[]const u8 = null,
+
+    /// What was actually at the position, when known.
+    actual: ?[]const u8 = null,
+
+    /// Outer-first context labels accumulated by `inContext` wrappers.
+    /// `&.{ "function call", "argument list" }` reads as
+    /// "while parsing a function call's argument list".
+    context: []const []const u8 = &.{},
 };
 
-/// Failure payload returned by every parser primitive.
+/// Convenience factory for building `ParseError` objects inside parser
+/// primitives. Equivalent to spelling out the struct literal but
+/// compresses the common case.
 ///
-/// `index` points at the first byte the parser refused; `msg` is a
-/// short English description suitable for logging. Phase 1 #19
-/// extends this with `parser`, `expected`, `actual`, and `context`.
-pub const ParseError = struct {
+/// Example:
+/// ```zig
+/// return updateError(state, parseError("char", state.index,
+///     "expected codepoint",
+///     .{ .expected = "'a'", .actual = next_char_str },
+/// ));
+/// ```
+pub fn parseError(
+    parser: []const u8,
     index: usize,
-    msg: []const u8,
-    tag: ParseErrorTag,
-};
+    message: []const u8,
+    extras: struct {
+        expected: ?[]const u8 = null,
+        actual: ?[]const u8 = null,
+        context: []const []const u8 = &.{},
+    },
+) ParseError {
+    return .{
+        .parser = parser,
+        .index = index,
+        .message = message,
+        .expected = extras.expected,
+        .actual = extras.actual,
+        .context = extras.context,
+    };
+}
+
+/// Format a `ParseError` into the conventional display string
+/// `ParseError [outer > inner] @ index N -> <parser>: <message>`.
+/// The context bracket is omitted when there is no context.
+///
+/// The returned string is allocated via `allocator` — caller owns and
+/// must `free` it.
+pub fn formatParseError(allocator: std.mem.Allocator, err: ParseError) ![]u8 {
+    if (err.context.len == 0) {
+        return try std.fmt.allocPrint(
+            allocator,
+            "ParseError @ index {d} -> {s}: {s}",
+            .{ err.index, err.parser, err.message },
+        );
+    }
+
+    // Build the context bracket: " [outer > inner]"
+    var ctx_buf: std.ArrayList(u8) = .empty;
+    defer ctx_buf.deinit(allocator);
+    try ctx_buf.appendSlice(allocator, " [");
+    for (err.context, 0..) |label, i| {
+        if (i > 0) try ctx_buf.appendSlice(allocator, " > ");
+        try ctx_buf.appendSlice(allocator, label);
+    }
+    try ctx_buf.appendSlice(allocator, "]");
+
+    return try std.fmt.allocPrint(
+        allocator,
+        "ParseError{s} @ index {d} -> {s}: {s}",
+        .{ ctx_buf.items, err.index, err.parser, err.message },
+    );
+}
 
 /// The result envelope every parser returns.
 ///
