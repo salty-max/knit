@@ -29,7 +29,7 @@ pub fn str(comptime target: []const u8) core.Parser([]const u8) {
                     "str",
                     state.index + matched,
                     "unexpected end of input",
-                    .{ .expected = target, .actual = rem },
+                    .{ .expected = target, .actual = rem, .kind = .incomplete },
                 ) };
             }
 

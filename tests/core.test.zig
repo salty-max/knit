@@ -24,6 +24,21 @@ test "parseError: factory carries expected and actual" {
     try std.testing.expectEqualStrings("world", e.actual.?);
 }
 
+test "parseError: factory defaults severity=.fatal and kind=.syntactic" {
+    const e = P.core.parseError("str", 0, "boom", .{});
+    try std.testing.expectEqual(P.core.Severity.fatal, e.severity);
+    try std.testing.expectEqual(P.core.ParseErrorKind.syntactic, e.kind);
+}
+
+test "parseError: factory carries severity and kind" {
+    const e = P.core.parseError("str", 0, "ran out", .{
+        .kind = .incomplete,
+        .severity = .recovered,
+    });
+    try std.testing.expectEqual(P.core.Severity.recovered, e.severity);
+    try std.testing.expectEqual(P.core.ParseErrorKind.incomplete, e.kind);
+}
+
 test "parseError: factory carries hint and notes" {
     const notes_arr = [_]P.core.Note{
         .{ .message = "definition was here", .index = 10 },
