@@ -154,8 +154,7 @@ fn collectTestFiles(b: *std.Build) []const []const u8 {
     defer dir.close();
     var walker = dir.walk(b.allocator) catch return &.{};
     defer walker.deinit();
-    while (walker.next() catch null) |entry_opt| {
-        const entry = entry_opt orelse continue;
+    while (walker.next() catch null) |entry| {
         if (entry.kind != .file) continue;
         if (!std.mem.endsWith(u8, entry.path, ".test.zig")) continue;
         const dup = b.allocator.dupe(u8, entry.path) catch continue;
