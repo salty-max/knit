@@ -52,13 +52,12 @@ pub fn Parser(comptime T: type) type {
     return struct {
         pub const Output = T;
         const Self = @This();
-        const ParseFn = fn (ctx: *const anyopaque, state: *ParseState) ParseResult(T);
+        const ParseFn = fn (state: *ParseState) ParseResult(T);
 
-        ctx: *const anyopaque,
         parseFn: *const ParseFn,
 
         pub fn parse(self: Self, state: *ParseState) ParseResult(T) {
-            return self.parseFn(self.ctx, state);
+            return self.parseFn(state);
         }
 
         pub fn run(self: Self, input: []const u8) ParseResult(T) {
