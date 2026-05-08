@@ -23,16 +23,15 @@ What parsil-zig **is not**:
 
 - **Zig 0.15.1** minimum (pinned in `build.zig.zon`'s `minimum_zig_version`)
 - **Zero runtime deps** — pure Zig, no C dependencies, no FFI
-- **Build & test**: native `zig build`, `zig build test`, `zig build test-all`
-- **Format**: `zig fmt`
+- **Build, test, lint, release tooling**: `build.zig` is the task runner. Every dev command is a `zig build <step>` (run `zig build --help` to list them). No Justfile, no Make, no shell-script wrapper at the root.
+- **Format**: `zig fmt` (driven via `zig build fmt` / `zig build fmt-check`)
 - **Git hooks**: [lefthook](https://github.com/evilmartians/lefthook) — single binary, language-agnostic, no Node
-- **Task runner**: [just](https://github.com/casey/just) — Justfile is the source of truth for dev commands
 - **Conventional commits**: [convco](https://github.com/convco/convco) — Rust binary, validates messages against `.convco.toml`
-- **Changesets**: manual `.changeset/*.md` format with custom shell scripts (no Node dependency)
+- **Changesets**: manual `.changeset/*.md` format with shell scripts under `scripts/` (no Node dependency)
 
-There is **no** Node, no Bun, no npm, no Cargo (other than installing the binaries above) anywhere in this project's dev loop.
+There is **no** Node, no Bun, no npm, no Cargo (other than installing the two binaries above) anywhere in this project's dev loop.
 
-Don't add a Node-shaped tool to solve a Zig-shaped problem.
+Don't add a Node-shaped tool to solve a Zig-shaped problem. `build.zig` already runs arbitrary commands via `b.addSystemCommand` — reach for that before reaching for a wrapper.
 
 ## Source Layout
 
@@ -56,12 +55,11 @@ tests/
 └── parsers/
     └── <name>/<file>.test.zig  # mirrors src/parsers/<name>/<file>.zig
 
-scripts/                    # bash helpers invoked from Justfile + lefthook
+scripts/                    # bash helpers invoked from build.zig + lefthook
 .changeset/                 # *.md changeset files, one per user-visible PR
 .github/                    # workflows + issue/PR templates
-build.zig
+build.zig                   # task runner: every dev command is `zig build <step>`
 build.zig.zon
-Justfile
 lefthook.yml
 .convco.toml
 CLAUDE.md                   # this file
@@ -192,7 +190,7 @@ parsil-zig is the parser foundation for the Gero ecosystem. A leaky type or sile
 - `ReleaseFast` — runtime safety off, optimizations max
 - `ReleaseSmall` — runtime safety off, size-optimized
 
-CI runs the full matrix on both Linux and macOS. A test passing only in Debug is not done — it has to pass in all four. Run `just test-modes` locally before declaring work done.
+CI runs the full matrix on both Linux and macOS. A test passing only in Debug is not done — it has to pass in all four. Run `zig build test-modes` locally before declaring work done.
 
 ### Forbidden in `src/`
 
@@ -241,7 +239,7 @@ parser              → the Parser(T) type and its methods
 core                → src/core.zig (ParseState, ParseResult, ParseError, helpers)
 parsers/<name>      → a specific combinator under src/parsers/<name>/
 util                → src/util/*
-tooling             → lefthook, just, convco, build scripts, .changeset scripts
+tooling             → build.zig, lefthook, convco, scripts/* helpers
 ci                  → .github/workflows/*
 docs                → JSDoc-equivalent doc comments, README, in-source documentation
 meta                → top-level repo files (CLAUDE.md, LICENSE, .gitignore, root configs)
@@ -355,7 +353,7 @@ bump: patch | minor | major
 Human-readable summary for the CHANGELOG.
 ```
 
-Run `just changeset` to scaffold one interactively.
+Run `zig build changeset` to scaffold one interactively.
 
 ### Enforcement
 
@@ -373,7 +371,7 @@ git checkout main && git pull
 
 # Apply changesets: bumps build.zig.zon version, prepends a CHANGELOG.md
 # section, deletes the consumed changeset files
-just version
+zig build version
 
 # Review the diff (version + CHANGELOG) and commit
 git diff
@@ -386,13 +384,13 @@ git push origin main --tags
 
 `release.yml` builds cross-target artifacts and creates a GitHub Release with the latest CHANGELOG section as body. There is no package registry — consumers fetch via `zig fetch` from the tag.
 
-If `just version` produces a version you don't want, edit `build.zig.zon` and `CHANGELOG.md` by hand before tagging — no shame in it. The downstream `release.yml` doesn't care how the tag arrived, only that the tag commit's working tree matches the version it advertises.
+If `zig build version` produces a version you don't want, edit `build.zig.zon` and `CHANGELOG.md` by hand before tagging — no shame in it. The downstream `release.yml` doesn't care how the tag arrived, only that the tag commit's working tree matches the version it advertises.
 
 ## Self-Review Before Declaring Done
 
 This section is **non-negotiable**. When you think the work on an issue is finished, **don't declare done immediately**. Run a self-review pass, fix what you find, and loop until the review is clean.
 
-> **The known failure mode** is treating green CI as proof of done. `just lint` clean + `just test-modes` clean is **necessary but not sufficient**. Issues list explicit acceptance criteria that go beyond CI: docs updates, type/error-set tightness, downstream consumer impact, changeset, README export list. Skipping these is the failure to guard against.
+> **The known failure mode** is treating green CI as proof of done. `zig build lint` clean + `zig build test-modes` clean is **necessary but not sufficient**. Issues list explicit acceptance criteria that go beyond CI: docs updates, type/error-set tightness, downstream consumer impact, changeset, README export list. Skipping these is the failure to guard against.
 
 ### Step 1 (do this first): re-open the issue body
 
@@ -406,15 +404,15 @@ Don't paraphrase the criteria. Don't merge them in your head. Walk the list as t
 
 ### Step 2: technical gates (necessary)
 
-- `just fmt-check` clean.
-- `bash scripts/check-imports.sh` clean.
-- `bash scripts/check-unused.sh` clean.
-- `bash scripts/check-strict.sh` clean.
-- `bash scripts/check-mirror.sh` clean (every parser has its mirror test).
-- `just test-modes` green — Debug + ReleaseSafe + ReleaseFast + ReleaseSmall.
+- `zig build fmt-check` clean.
+- `zig build imports` clean.
+- `zig build unused` clean.
+- `zig build strict` clean.
+- `zig build mirror` clean (every parser has its mirror test).
+- `zig build test-modes` green — Debug + ReleaseSafe + ReleaseFast + ReleaseSmall.
 - `zig build test-all` green — cross-target compile gate.
 
-`just ci` runs all of the above end-to-end.
+`zig build ci` runs all of the above end-to-end.
 
 ### Step 3: explicit acceptance checks (don't skip)
 
