@@ -118,6 +118,9 @@ pub fn build(b: *std.Build) void {
     const check_test_alloc = b.addSystemCommand(&.{ "bash", "scripts/check-testing-allocator.sh" });
     b.step("testing-allocator", "Require std.testing.allocator in alloc-touching tests").dependOn(&check_test_alloc.step);
 
+    const check_docs = b.addSystemCommand(&.{ "bash", "scripts/check-docs.sh" });
+    b.step("docs", "Require /// doc comments on every public declaration").dependOn(&check_docs.step);
+
     const lint_step = b.step("lint", "Run every static check CI runs");
     lint_step.dependOn(&fmt_check.step);
     lint_step.dependOn(&check_imports.step);
@@ -125,6 +128,7 @@ pub fn build(b: *std.Build) void {
     lint_step.dependOn(&check_strict.step);
     lint_step.dependOn(&check_mirror.step);
     lint_step.dependOn(&check_test_alloc.step);
+    lint_step.dependOn(&check_docs.step);
 
     // ----- All-in-one CI ---------------------------------------------------
 

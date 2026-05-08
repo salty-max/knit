@@ -1,6 +1,22 @@
 const std = @import("std");
 const core = @import("../core.zig");
 
+/// Match the literal `target` at the current cursor.
+///
+/// On success: returns the matched slice (which equals `target`) and
+/// advances the cursor by `target.len`. The slice is borrowed from
+/// the input — no allocation.
+///
+/// On failure: returns `.UnexpectedEoF` if the input runs out before
+/// the literal is matched (cursor at the first mismatched byte), or
+/// `.ExpectedLiteral` if the prefix differs (cursor at the start
+/// position).
+///
+/// Example:
+/// ```zig
+/// const r = str("hello").run("hello world");
+/// // r.ok.value == "hello", r.ok.index == 5
+/// ```
 pub fn str(comptime target: []const u8) core.Parser([]const u8) {
     const Thunk = struct {
         fn parse(state: *core.ParseState) core.ParseResult([]const u8) {

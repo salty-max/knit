@@ -32,6 +32,8 @@ jobs:
         run: bash scripts/check-mirror.sh
       - name: Testing allocator
         run: bash scripts/check-testing-allocator.sh
+      - name: Doc comments
+        run: bash scripts/check-docs.sh
 
   test:
     name: Test (Linux, ${{ matrix.mode }})
