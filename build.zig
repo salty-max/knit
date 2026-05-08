@@ -21,31 +21,36 @@ pub fn build(b: *std.Build) void {
 
     // ----- Format ----------------------------------------------------------
 
-    // `zig build fmt` rewrites every .zig file in place.
     const fmt = b.addFmt(.{
-        .paths = &.{ "src", "tests", "test.zig", "build.zig" },
+        .paths = &.{ "src", "tests", "build.zig" },
         .check = false,
     });
     b.step("fmt", "Format every .zig file in place").dependOn(&fmt.step);
 
-    // `zig build fmt-check` fails on any drift; what CI runs.
     const fmt_check = b.addFmt(.{
-        .paths = &.{ "src", "tests", "test.zig", "build.zig" },
+        .paths = &.{ "src", "tests", "build.zig" },
         .check = true,
     });
     b.step("fmt-check", "Check formatting without writing").dependOn(&fmt_check.step);
 
+    // ----- Test discovery --------------------------------------------------
+    //
+    // Walk tests/ at build time and collect every *.test.zig. Each one becomes
+    // its own test artifact, importing `parsil` (the library module) and
+    // `util` (test helpers in tests/util.zig).
+    //
+    // Auto-discovery means contributors never edit a manifest: dropping a
+    // tests/parsers/<name>/<file>.test.zig file is enough.
+
+    const test_files = collectTestFiles(b);
+
     // ----- Native tests, default optimize ----------------------------------
 
-    const native_test_mod = b.createModule(.{
-        .root_source_file = b.path("test.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    native_test_mod.addImport("parsil", parsil_mod);
-    const native_tests = b.addTest(.{ .root_module = native_test_mod });
-    const run_native_tests = b.addRunArtifact(native_tests);
-    b.step("test", "Run native tests").dependOn(&run_native_tests.step);
+    const test_step = b.step("test", "Run native tests");
+    for (test_files) |rel| {
+        const t = makeTest(b, parsil_mod, rel, target, optimize);
+        test_step.dependOn(&b.addRunArtifact(t).step);
+    }
 
     // ----- Native tests in every release mode (CI matrix) ------------------
 
@@ -53,26 +58,25 @@ pub fn build(b: *std.Build) void {
     const modes = [_]std.builtin.OptimizeMode{ .Debug, .ReleaseSafe, .ReleaseFast, .ReleaseSmall };
     for (modes) |mode| {
         const mode_name = @tagName(mode);
-        const mode_test_mod = b.createModule(.{
-            .root_source_file = b.path("test.zig"),
-            .target = target,
-            .optimize = mode,
-        });
-        mode_test_mod.addImport("parsil", parsil_mod);
-        const mode_tests = b.addTest(.{
-            .name = b.fmt("test-{s}", .{mode_name}),
-            .root_module = mode_test_mod,
-        });
-        const run_mode_tests = b.addRunArtifact(mode_tests);
-        const mode_step = b.step(b.fmt("test-{s}", .{mode_name}), b.fmt("Run native tests in {s} mode", .{mode_name}));
-        mode_step.dependOn(&run_mode_tests.step);
-        test_modes_step.dependOn(&run_mode_tests.step);
+        const mode_step = b.step(
+            b.fmt("test-{s}", .{mode_name}),
+            b.fmt("Run native tests in {s} mode", .{mode_name}),
+        );
+        for (test_files) |rel| {
+            const t = makeTest(b, parsil_mod, rel, target, mode);
+            const run = b.addRunArtifact(t);
+            mode_step.dependOn(&run.step);
+            test_modes_step.dependOn(&run.step);
+        }
     }
 
     // ----- Cross-target compile-only tests ---------------------------------
 
-    const test_all = b.step("test-all", "Run native tests + compile-only on extra targets");
-    test_all.dependOn(&run_native_tests.step);
+    const test_all = b.step("test-all", "Native run + compile-only on extra targets");
+    for (test_files) |rel| {
+        const t = makeTest(b, parsil_mod, rel, target, optimize);
+        test_all.dependOn(&b.addRunArtifact(t).step);
+    }
 
     const extra_targets: []const std.Target.Query = if (builtin.os.tag == .macos)
         &.{
@@ -90,20 +94,14 @@ pub fn build(b: *std.Build) void {
             .{ .cpu_arch = .wasm32, .os_tag = .wasi },
         };
     for (extra_targets) |tq| {
-        const cross_mod = b.createModule(.{
-            .root_source_file = b.path("test.zig"),
-            .target = b.resolveTargetQuery(tq),
-            .optimize = optimize,
-        });
-        cross_mod.addImport("parsil", parsil_mod);
-        const cross_tests = b.addTest(.{ .root_module = cross_mod });
-        test_all.dependOn(&cross_tests.step);
+        const cross_target = b.resolveTargetQuery(tq);
+        for (test_files) |rel| {
+            const t = makeTest(b, parsil_mod, rel, cross_target, optimize);
+            test_all.dependOn(&t.step);
+        }
     }
 
     // ----- Lint scripts ----------------------------------------------------
-    //
-    // Each script is owned by its own Phase 0 issue and may not exist yet —
-    // `zig build lint` exits non-zero until every script lands.
 
     const check_imports = b.addSystemCommand(&.{ "bash", "scripts/check-imports.sh" });
     b.step("imports", "Forbid @import past one parent").dependOn(&check_imports.step);
@@ -144,4 +142,59 @@ pub fn build(b: *std.Build) void {
     const clean_step = b.step("clean", "Remove zig-out and .zig-cache");
     clean_step.dependOn(&b.addRemoveDirTree(b.path("zig-out")).step);
     clean_step.dependOn(&b.addRemoveDirTree(b.path(".zig-cache")).step);
+}
+
+/// Walk tests/ at build time and collect every relative path ending in
+/// `.test.zig`. Returns paths sorted for deterministic build output.
+/// Returns an empty slice if tests/ is missing or unreadable — that yields
+/// a build with zero test artifacts rather than a hard failure.
+fn collectTestFiles(b: *std.Build) []const []const u8 {
+    var paths: std.ArrayList([]const u8) = .empty;
+    var dir = std.fs.cwd().openDir("tests", .{ .iterate = true }) catch return &.{};
+    defer dir.close();
+    var walker = dir.walk(b.allocator) catch return &.{};
+    defer walker.deinit();
+    while (walker.next() catch null) |entry_opt| {
+        const entry = entry_opt orelse continue;
+        if (entry.kind != .file) continue;
+        if (!std.mem.endsWith(u8, entry.path, ".test.zig")) continue;
+        const dup = b.allocator.dupe(u8, entry.path) catch continue;
+        paths.append(b.allocator, dup) catch continue;
+    }
+    std.mem.sort([]const u8, paths.items, {}, struct {
+        fn lt(_: void, a: []const u8, c: []const u8) bool {
+            return std.mem.lessThan(u8, a, c);
+        }
+    }.lt);
+    return paths.toOwnedSlice(b.allocator) catch &.{};
+}
+
+/// Build a test artifact for `tests/<rel>` against a (target, optimize) pair.
+/// The test module imports `parsil` (library) and `util` (helpers in tests/util.zig).
+fn makeTest(
+    b: *std.Build,
+    parsil_mod: *std.Build.Module,
+    rel: []const u8,
+    target: std.Build.ResolvedTarget,
+    optimize: std.builtin.OptimizeMode,
+) *std.Build.Step.Compile {
+    const util_mod = b.createModule(.{
+        .root_source_file = b.path("tests/util.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    util_mod.addImport("parsil", parsil_mod);
+
+    const test_mod = b.createModule(.{
+        .root_source_file = b.path(b.fmt("tests/{s}", .{rel})),
+        .target = target,
+        .optimize = optimize,
+    });
+    test_mod.addImport("parsil", parsil_mod);
+    test_mod.addImport("util", util_mod);
+
+    return b.addTest(.{
+        .name = b.fmt("test-{s}", .{rel}),
+        .root_module = test_mod,
+    });
 }
