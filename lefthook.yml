@@ -25,6 +25,9 @@ pre-commit:
     imports:
       glob: "*.zig"
       run: bash scripts/check-imports.sh {staged_files}
+    strict:
+      glob: "*.zig"
+      run: bash scripts/check-strict.sh {staged_files}
 
 pre-push:
   parallel: true
