@@ -21,7 +21,7 @@ What parsil-zig **is not**:
 
 ## Tech Stack
 
-- **Zig 0.15.1** minimum (pinned in `build.zig.zon`'s `minimum_zig_version`)
+- **Zig 0.16.0** minimum (pinned in `build.zig.zon`'s `minimum_zig_version`)
 - **Zero runtime deps** — pure Zig, no C dependencies, no FFI
 - **Build, test, lint, release tooling**: `build.zig` is the task runner. Every dev command is a `zig build <step>` (run `zig build --help` to list them). No Justfile, no Make, no shell-script wrapper at the root.
 - **Format**: `zig fmt` (driven via `zig build fmt` / `zig build fmt-check`)
@@ -271,7 +271,7 @@ Adding a new parser dir under `src/parsers/<name>/`? Add `parsers/<name>` to the
 feat(parsers/sep-by): add sepByOne
 fix(parsers/many): stop on EOI even when the inner parser succeeds with an empty match
 refactor(core): extract createParseState into its own helper
-chore(deps): bump zig minimum to 0.15.2
+chore(deps): bump zig minimum to 0.16.1
 chore(tooling): wire convco into lefthook commit-msg
 docs(parsers/recursive): clarify when to use recursive vs lazy chain
 meta: add CLAUDE.md with project conventions
