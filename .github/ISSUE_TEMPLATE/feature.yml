@@ -1,0 +1,33 @@
+name: Feature request
+description: Propose a new feature, helper, or behaviour change
+title: "feat: <short description>"
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation
+      description: What problem does this solve? Who benefits and how?
+    validations:
+      required: true
+
+  - type: textarea
+    id: api
+    attributes:
+      label: Proposed API
+      description: Sketch the public signature(s) you have in mind.
+      render: zig
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What did you think about and reject? Why is this proposal better?
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: Links to similar features in other libraries, prior discussion, etc.

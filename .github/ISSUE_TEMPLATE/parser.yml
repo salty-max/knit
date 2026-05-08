@@ -1,0 +1,53 @@
+name: New parser / combinator
+description: Propose a specific parser combinator (parsil-TS port or new)
+title: "feat(parsers/<name>): <short description>"
+labels: ["enhancement", "kind/feat", "area/parsers"]
+body:
+  - type: input
+    id: name
+    attributes:
+      label: Parser name
+      description: kebab-case directory name as it would appear under `src/parsers/<name>/`.
+      placeholder: "sep-by"
+    validations:
+      required: true
+
+  - type: textarea
+    id: signature
+    attributes:
+      label: Public signature
+      description: How does the parser appear in user code? Multi-arity OK.
+      render: zig
+      placeholder: |
+        pub fn sepBy(comptime T: type, comptime sep: anytype, comptime p: Parser(T)) Parser([]T)
+    validations:
+      required: true
+
+  - type: textarea
+    id: behaviour
+    attributes:
+      label: Behaviour spec
+      description: What does it do on success? What does it do on failure?
+    validations:
+      required: true
+
+  - type: textarea
+    id: errors
+    attributes:
+      label: Expected errors
+      description: ParseError shapes the parser emits (parser identity, message, expected/actual).
+
+  - type: textarea
+    id: edge-cases
+    attributes:
+      label: Edge cases
+      description: Empty input, EOF, multi-byte UTF-8, allocator hygiene, etc.
+    validations:
+      required: true
+
+  - type: textarea
+    id: parsil-ts-ref
+    attributes:
+      label: parsil-TS reference (if porting)
+      description: Link to or path of the parsil-TS source this mirrors.
+      placeholder: "src/parsers/sep-by/sep-by.ts"
