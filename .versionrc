@@ -1,0 +1,4 @@
+{
+  "scopeRegex": "^(parser|core|util|tooling|ci|docs|meta|parsers/[a-z][a-z0-9-]*)$",
+  "lineLength": 100
+}
