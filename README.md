@@ -4,6 +4,18 @@ A tiny, composable parser-combinator toolkit for Zig. Small parsers compose into
 
 Parsil-zig is the Zig sibling of [parsil (TypeScript)](https://github.com/salty-max/parsil) — full API parity with parsil-TS 3.0.0 is the v1.0.0 milestone (work in progress under [v1.0.0](https://github.com/salty-max/parsil-zig/milestone/1)).
 
+## Table of contents
+
+- [Quick Start](#quick-start)
+- [Core Concepts](#core-concepts)
+- [Parsers (current shipping set)](#parsers)
+- [Roadmap](#roadmap)
+- [Development](#development)
+- [Compatibility](#compatibility)
+- [Contributing](#contributing)
+
+<a id="quick-start"></a>
+
 <details open>
 <summary><b>Quick Start</b></summary>
 
@@ -44,6 +56,8 @@ Requires Zig **0.16.0** or later.
 
 </details>
 
+<a id="core-concepts"></a>
+
 <details>
 <summary><b>Core Concepts</b></summary>
 
@@ -55,6 +69,8 @@ Requires Zig **0.16.0** or later.
 `Parser(T)` is a comptime-monomorphic function pointer — every parser captures its state via a comptime closure. Combinators that compose other parsers take their inputs as `comptime` parameters; runtime-assembled grammars use `recursive(thunk)`. There is no `*anyopaque` anywhere in the library.
 
 </details>
+
+<a id="parsers"></a>
 
 <details>
 <summary><b>Parsers (current shipping set)</b></summary>
@@ -69,6 +85,8 @@ The full Phase 2 set (`char`, `digits`, `letters`, `sequenceOf`, `choice`, `many
 
 </details>
 
+<a id="roadmap"></a>
+
 <details>
 <summary><b>Roadmap</b></summary>
 
@@ -80,6 +98,8 @@ The work is organized as four phases tracked by parent issues:
 - [Phase 3 — Release](https://github.com/salty-max/parsil-zig/issues/4): cut v1.0.0
 
 </details>
+
+<a id="development"></a>
 
 <details>
 <summary><b>Development</b></summary>
@@ -121,6 +141,8 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for branching, commit conventions, and 
 
 </details>
 
+<a id="compatibility"></a>
+
 <details>
 <summary><b>Compatibility</b></summary>
 
@@ -129,6 +151,8 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for branching, commit conventions, and 
 - **Test runs** in CI: native Linux, every release mode (Debug, ReleaseSafe, ReleaseFast, ReleaseSmall). The library is pure Zig with no OS-specific I/O — runtime tests on macOS/Windows are mostly redundant given the cross-target compile gate.
 
 </details>
+
+<a id="contributing"></a>
 
 <details>
 <summary><b>Contributing</b></summary>
