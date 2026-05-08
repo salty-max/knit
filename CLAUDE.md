@@ -85,7 +85,20 @@ A parser is a pure function `state -> state`. Never close over module-level muta
 
 Every public parser is `Parser(T)` for a specific `T`. Use comptime to thread types — never erase to `*anyopaque` in a public signature. Heterogeneous parser arrays (`choice`, `sequenceOf`) accept comptime tuples or `[]const Parser(T)` slices with a shared `T`; `fail(error)` returns `Parser(noreturn)` because it can never produce a result.
 
-**No `*anyopaque` at the public API boundary.** The internal `Parser(T).ctx` field uses `*const anyopaque` for type erasure; that's an implementation detail. Public function signatures must not expose `*anyopaque`.
+**No `*anyopaque` — anywhere.** `Parser(T)` is just a comptime-monomorphic function pointer:
+
+```zig
+pub fn Parser(comptime T: type) type {
+    return struct {
+        parseFn: *const fn (state: *ParseState) ParseResult(T),
+        // ...
+    };
+}
+```
+
+Every parser's captured state is comptime — `str("foo")` and `str("bar")` instantiate distinct anonymous-struct closures whose function pointers happen to share the same `Parser([]const u8)` signature. No type-erased context is needed.
+
+Consequence: combinators that compose other parsers (`map`, `chain`, `choice`, `sequenceOf`, `between`, …) take their inputs as `comptime` parameters. Method-chaining survives only for transformations whose `Parser(T)` is comptime-known. For runtime-assembled grammars, use `recursive(thunk)` (lazy) instead of dynamic composition.
 
 **No `anyerror`.** Use explicit error sets (`error{Foo, Bar}!T`) so callers can exhaustively handle failures. `scripts/check-strict.sh` greps for `anyerror` in `src/` and fails CI if any appear without an allowlist comment.
 
@@ -197,7 +210,7 @@ CI runs the full matrix on both Linux and macOS. A test passing only in Debug is
 `scripts/check-strict.sh` grep-based lint runs in CI and fails on any of:
 
 - `anyerror` — use explicit error sets.
-- `*anyopaque` in any `pub fn`/`pub const` signature — internal fields only.
+- `*anyopaque` or `*const anyopaque` anywhere in `src/` — `Parser(T)` is comptime-monomorphic, no erasure needed.
 - `@as(`, `@ptrCast(`, `@alignCast(`, `@bitCast(` without a `// @as: <reason>` or `// safety: <reason>` comment **on the line directly above**.
 - `unreachable` and `@compileError("TODO")` without a justifying comment.
 - `std.debug.print` outside of test code.
@@ -461,8 +474,9 @@ fn parse(state: *ParseState) ParseResult(T) {
     ...
 }
 
-// Bad — *anyopaque in public API
-pub fn sequence(parsers: []const *const anyopaque) Parser(*anyopaque) { ... }
+// Bad — *anyopaque anywhere
+pub fn sequence(parsers: []const Parser(*anyopaque)) Parser(*anyopaque) { ... }
+const ctx: *const anyopaque = undefined; // even as an internal field — banned
 
 // Bad — anyerror
 pub fn run(self: Parser(T), input: []const u8, a: std.mem.Allocator) anyerror!ParseResult(T) { ... }
@@ -486,7 +500,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 
 1. **One concern per file** — split early
 2. **Pure parsers** — no hidden state, no panic on parse failure
-3. **Carry types** — no `*anyopaque` / `anyerror` in public exports
+3. **Carry types** — no `*anyopaque` (anywhere) and no `anyerror` in public exports
 4. **Justified casts** — `@as`/`@ptrCast`/`@bitCast` need a why-comment
 5. **Spans are first-class** — use `withSpan`/`spanMap`, don't reinvent positions
 6. **Two-layer errors** — primitives produce raw structured errors, consumers map them
