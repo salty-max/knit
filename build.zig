@@ -193,7 +193,25 @@ fn makeTest(
     test_mod.addImport("util", util_mod);
 
     return b.addTest(.{
-        .name = b.fmt("test-{s}", .{rel}),
+        .name = b.fmt("test-{s}", .{sanitizeName(b, rel)}),
         .root_module = test_mod,
     });
+}
+
+/// Turn a relative path like "parsers/str.test.zig" into a valid test
+/// artifact name like "parsers-str". Zig rejects names containing
+/// path separators.
+fn sanitizeName(b: *std.Build, rel: []const u8) []const u8 {
+    const without_suffix = if (std.mem.endsWith(u8, rel, ".test.zig"))
+        rel[0 .. rel.len - ".test.zig".len]
+    else
+        rel;
+    const out = b.allocator.alloc(u8, without_suffix.len) catch return "test";
+    for (without_suffix, 0..) |c, i| {
+        out[i] = switch (c) {
+            '/', '\\', '.' => '-',
+            else => c,
+        };
+    }
+    return out;
 }
