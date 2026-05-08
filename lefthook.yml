@@ -34,3 +34,5 @@ pre-push:
   commands:
     test:
       run: zig build test
+    unused:
+      run: bash scripts/check-unused.sh
