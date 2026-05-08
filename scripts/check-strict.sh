@@ -10,6 +10,11 @@
 #   5. `unreachable` (as a statement) requires a justifying `//` comment above
 #   6. `@compileError("TODO"` requires a justifying `//` comment above
 #   7. `std.debug.print(` anywhere in src/ (no allowlist; use parsers/util/debugLog)
+#   8. `catch unreachable` — almost always hides a real error
+#   9. `catch |x| return x` — verbose form of `try`; suggest the replacement
+#  10. `std.heap.page_allocator` direct use — libs accept allocators from the caller
+#  11. `usingnamespace` — deprecated in the Zig style guide
+#  12. `//!` (file-level doc) outside src/core.zig — CLAUDE.md restricts it
 #
 # Usage:
 #   bash scripts/check-strict.sh                 # walk every .zig in src/
@@ -101,12 +106,63 @@ scan_file() {
       fi
     done
 
-    # Rule 5: unreachable (as a statement). Word-boundary via grep -w
-    # because bash regex `\b` is not portable across platforms.
-    if [[ "$stripped" != "//"* ]] && echo "$line" | grep -qw "unreachable"; then
+    # Rule 8: `catch unreachable`. Even with a regular `// ...` comment
+    # above, this pattern is suspicious enough to require an explicit
+    # `// allow-strict: <reason>` (not a generic comment).
+    is_catch_unreachable=0
+    if [[ "$line" == *"catch unreachable"* ]] && [[ "$stripped" != "//"* ]]; then
+      is_catch_unreachable=1
+      if ! is_allowed "$prev"; then
+        report "$file" "$lineno" "catch-unreachable" "$line"
+      fi
+    fi
+
+    # Rule 5: bare `unreachable` (skip lines already covered by rule 8).
+    if [[ "$is_catch_unreachable" -eq 0 ]] \
+        && [[ "$stripped" != "//"* ]] \
+        && echo "$line" | grep -qw "unreachable"; then
       if ! is_allowed "$prev" && [[ "$prev" != *"//"* ]]; then
         report "$file" "$lineno" "unreachable-no-comment" "$line"
       fi
+    fi
+
+    # Rule 9: `catch |x| return x` — same as `try`, more verbose.
+    # Use bash's =~ + BASH_REMATCH to compare the two identifiers.
+    if [[ "$stripped" != "//"* ]] \
+        && [[ "$line" =~ catch[[:space:]]\|([a-zA-Z_][a-zA-Z0-9_]*)\|[[:space:]]+return[[:space:]]+([a-zA-Z_][a-zA-Z0-9_]*) ]]; then
+      err_name="${BASH_REMATCH[1]}"
+      ret_name="${BASH_REMATCH[2]}"
+      if [[ "$err_name" == "$ret_name" ]] && ! is_allowed "$prev"; then
+        report "$file" "$lineno" "catch-return-use-try" "$line"
+      fi
+    fi
+
+    # Rule 10: std.heap.page_allocator direct use. Libraries accept
+    # allocators from the caller; hardcoding page_allocator breaks the
+    # arena-per-parse convention (Phase 1 #20).
+    if [[ "$line" == *"page_allocator"* ]] && [[ "$stripped" != "//"* ]]; then
+      if ! is_allowed "$prev"; then
+        report "$file" "$lineno" "page_allocator-direct" "$line"
+      fi
+    fi
+
+    # Rule 11: usingnamespace — deprecated by the Zig style guide.
+    if [[ "$stripped" == "usingnamespace "* ]] || [[ "$stripped" == "pub usingnamespace "* ]]; then
+      if ! is_allowed "$prev"; then
+        report "$file" "$lineno" "usingnamespace-deprecated" "$line"
+      fi
+    fi
+
+    # Rule 12: //! (file-level doc) is reserved for src/core.zig.
+    if [[ "$stripped" == "//!"* ]]; then
+      case "$file" in
+        src/core.zig | ./src/core.zig) ;;
+        *)
+          if ! is_allowed "$prev"; then
+            report "$file" "$lineno" "module-doc-outside-core" "$line"
+          fi
+          ;;
+      esac
     fi
 
     # Rule 6: @compileError("TODO".
