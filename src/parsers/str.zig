@@ -3,7 +3,7 @@ const core = @import("../core.zig");
 
 pub fn str(comptime target: []const u8) core.Parser([]const u8) {
     const Thunk = struct {
-        fn parse(_: *const anyopaque, state: *core.ParseState) core.ParseResult([]const u8) {
+        fn parse(state: *core.ParseState) core.ParseResult([]const u8) {
             const rem = state.remaining();
             if (rem.len < target.len) {
                 var matched: usize = 0;
@@ -20,5 +20,5 @@ pub fn str(comptime target: []const u8) core.Parser([]const u8) {
         }
     };
 
-    return .{ .ctx = undefined, .parseFn = &Thunk.parse };
+    return .{ .parseFn = &Thunk.parse };
 }
