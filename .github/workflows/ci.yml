@@ -34,6 +34,8 @@ jobs:
         run: bash scripts/check-testing-allocator.sh
       - name: Doc comments
         run: bash scripts/check-docs.sh
+      - name: Naming convention
+        run: bash scripts/check-naming.sh
 
   test:
     name: Test (Linux, ${{ matrix.mode }})

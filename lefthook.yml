@@ -42,3 +42,5 @@ pre-push:
       run: bash scripts/check-testing-allocator.sh
     docs:
       run: bash scripts/check-docs.sh
+    naming:
+      run: bash scripts/check-naming.sh

@@ -226,6 +226,19 @@ Allowlist a violation by adding `// allow-strict: <reason>` directly above the l
 
 `zig build test-all` compiles tests for Linux x86_64, macOS aarch64, Windows x86_64+aarch64, and `wasm32-wasi` on every PR. A change that breaks any target fails CI.
 
+### Naming convention
+
+`scripts/check-naming.sh` enforces the Zig style-guide convention for public functions:
+
+- `pub fn Foo(...) type` → **PascalCase** (the function returns a type)
+- `pub fn foo(...) <other>` → **camelCase** (the function returns a value)
+
+The lint is heuristic — only single-line `pub fn ... {` signatures are checked. Multi-line signatures (where the closing `{` is on a later line) are skipped to avoid false positives; an AST-based upgrade would close that gap.
+
+`pub const` naming is **not** enforced — Zig accepts both PascalCase and snake_case. Convention: `pub const Foo = struct {...}` is PascalCase; `pub const foo_bar = 42` is snake_case.
+
+Allowlist with `// allow-strict: <reason>` directly above the declaration when a deliberate exception is needed.
+
 ## Testing
 
 - **Runner**: `zig build test` (no third-party test runner). The standard library `std.testing` API is the only test API.
