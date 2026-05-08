@@ -4,7 +4,7 @@
 #
 # Rules (each can be silenced by `// allow-strict: <reason>` directly above):
 #   1. `anyerror` in any code line (not pure comment)
-#   2. `*anyopaque` in a single-line `pub fn` / `pub const` declaration
+#   2. `*anyopaque` (or `*const anyopaque`) anywhere in src/
 #   3. `@as(`            requires `// @as: <reason>` on the line above
 #   4. `@ptrCast(` / `@alignCast(` / `@bitCast(` require `// safety: <reason>` above
 #   5. `unreachable` (as a statement) requires a justifying `//` comment above
@@ -74,11 +74,13 @@ scan_file() {
       fi
     fi
 
-    # Rule 2: *anyopaque in a pub declaration line.
-    if [[ "$line" == *"pub fn"* || "$line" == *"pub const"* || "$line" == *"pub var"* ]] \
+    # Rule 2: *anyopaque (or *const anyopaque) anywhere in src/.
+    # The Parser(T) design uses comptime-monomorphic fn pointers; no
+    # type-erasure context is needed.
+    if [[ "$stripped" != "//"* ]] \
         && [[ "$line" == *"*anyopaque"* || "$line" == *"*const anyopaque"* ]]; then
       if ! is_allowed "$prev"; then
-        report "$file" "$lineno" "*anyopaque-in-pub" "$line"
+        report "$file" "$lineno" "anyopaque-banned" "$line"
       fi
     fi
 
