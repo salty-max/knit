@@ -1,5 +1,45 @@
 const std = @import("std");
 
+/// Severity of a `ParseError`. Defaults to `.fatal` — the parse cannot
+/// continue. `recoverAt` (#44) and similar combinators promote their
+/// captured errors to `.recovered` so consumers can tell synchronized
+/// errors apart from terminal ones in a multi-error stream.
+pub const Severity = enum {
+    fatal,
+    recovered,
+};
+
+/// Coarse classification of a `ParseError`. The `parser` field
+/// disambiguates at fine grain (`"str"` vs `"keyword"` vs …); `kind`
+/// answers "what kind of problem is this?" at the granularity LSPs,
+/// IDEs, and consumer error handlers care about.
+///
+/// New variants land here via PR — keep the enum small and meaningful.
+pub const ParseErrorKind = enum {
+    /// Character / codepoint level: invalid UTF-8, char outside an
+    /// expected set, malformed escape inside a string literal.
+    lexical,
+
+    /// Structural: missing comma, unclosed bracket, malformed
+    /// expression. The default and most common case.
+    syntactic,
+
+    /// EOF (or end-of-input sentinel) reached mid-construct. A
+    /// specialization of syntactic that LSPs treat differently —
+    /// e.g. don't redden while the user is still typing.
+    incomplete,
+
+    /// Higher-level constraint violated by a consumer parser: name
+    /// not declared, type mismatch, semantic conflict. parsil-zig
+    /// itself rarely emits these (mostly consumer-emitted via
+    /// `errorMap` at the boundary).
+    semantic,
+
+    /// Library bug or invariant violation. Should never reach end
+    /// users. Treat as a panic candidate during dev.
+    internal,
+};
+
 /// Secondary diagnostic note attached to a `ParseError`.
 ///
 /// Notes carry information that's related to but not the primary
@@ -59,6 +99,14 @@ pub const ParseError = struct {
     /// position and hint. The pretty formatter renders them under
     /// the primary error.
     notes: []const Note = &.{},
+
+    /// Severity of the failure — `.fatal` (default) or `.recovered`
+    /// (parser synchronized via `recoverAt`).
+    severity: Severity = .fatal,
+
+    /// Coarse classification — `.syntactic` by default. See
+    /// `ParseErrorKind` for the variant menu.
+    kind: ParseErrorKind = .syntactic,
 };
 
 /// Convenience factory for building `ParseError` objects inside parser
@@ -82,6 +130,8 @@ pub fn parseError(
         hint: ?[]const u8 = null,
         context: []const []const u8 = &.{},
         notes: []const Note = &.{},
+        severity: Severity = .fatal,
+        kind: ParseErrorKind = .syntactic,
     },
 ) ParseError {
     return .{
@@ -93,6 +143,8 @@ pub fn parseError(
         .hint = extras.hint,
         .context = extras.context,
         .notes = extras.notes,
+        .severity = extras.severity,
+        .kind = extras.kind,
     };
 }
 

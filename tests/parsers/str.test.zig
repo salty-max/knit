@@ -24,4 +24,14 @@ test "str: fails when input is too short" {
     const err = try u.assertErr([]const u8, r);
     try std.testing.expectEqualStrings("pikachu", err.expected.?);
     try std.testing.expectEqualStrings("pika", err.actual.?);
+    // EOF mid-literal is conceptually 'incomplete' — useful for LSPs that
+    // suppress red squiggles while the user is still typing.
+    try std.testing.expectEqual(P.core.ParseErrorKind.incomplete, err.kind);
+}
+
+test "str: mismatch is syntactic-kind, fatal-severity by default" {
+    const r = P.str("pika").run("charmander");
+    const err = try u.assertErr([]const u8, r);
+    try std.testing.expectEqual(P.core.ParseErrorKind.syntactic, err.kind);
+    try std.testing.expectEqual(P.core.Severity.fatal, err.severity);
 }
