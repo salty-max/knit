@@ -121,6 +121,9 @@ pub fn build(b: *std.Build) void {
     const check_docs = b.addSystemCommand(&.{ "bash", "scripts/check-docs.sh" });
     b.step("docs", "Require /// doc comments on every public declaration").dependOn(&check_docs.step);
 
+    const check_naming = b.addSystemCommand(&.{ "bash", "scripts/check-naming.sh" });
+    b.step("naming", "Enforce PascalCase for type-returning fns, camelCase otherwise").dependOn(&check_naming.step);
+
     const lint_step = b.step("lint", "Run every static check CI runs");
     lint_step.dependOn(&fmt_check.step);
     lint_step.dependOn(&check_imports.step);
@@ -129,6 +132,7 @@ pub fn build(b: *std.Build) void {
     lint_step.dependOn(&check_mirror.step);
     lint_step.dependOn(&check_test_alloc.step);
     lint_step.dependOn(&check_docs.step);
+    lint_step.dependOn(&check_naming.step);
 
     // ----- All-in-one CI ---------------------------------------------------
 
