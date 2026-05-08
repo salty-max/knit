@@ -3,12 +3,12 @@ const P = @import("parsil");
 const u = @import("util");
 
 test "str: matches at beginning of input" {
-    const r = P.str("pika").run("pikachu");
+    const r = P.str("pika").run("pikachu", std.testing.allocator);
     try u.assertOkStrAt(r, "pika", 4);
 }
 
 test "str: fails when input starts differently" {
-    const r = P.str("pika").run("charmander");
+    const r = P.str("pika").run("charmander", std.testing.allocator);
     try u.assertErrAt([]const u8, r, 0, "str");
     try u.expectErrorMessageContains([]const u8, r, "expected literal");
     // Rich error: expected/actual carry the contextual slices.
@@ -18,7 +18,7 @@ test "str: fails when input starts differently" {
 }
 
 test "str: fails when input is too short" {
-    const r = P.str("pikachu").run("pika");
+    const r = P.str("pikachu").run("pika", std.testing.allocator);
     try u.assertErrAt([]const u8, r, 4, "str");
     try u.expectErrorMessageContains([]const u8, r, "unexpected end of input");
     const err = try u.assertErr([]const u8, r);
@@ -30,7 +30,7 @@ test "str: fails when input is too short" {
 }
 
 test "str: mismatch is syntactic-kind, fatal-severity by default" {
-    const r = P.str("pika").run("charmander");
+    const r = P.str("pika").run("charmander", std.testing.allocator);
     const err = try u.assertErr([]const u8, r);
     try std.testing.expectEqual(P.core.ParseErrorKind.syntactic, err.kind);
     try std.testing.expectEqual(P.core.Severity.fatal, err.severity);

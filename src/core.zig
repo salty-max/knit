@@ -396,15 +396,21 @@ pub fn ParseResult(comptime T: type) type {
 /// Cursor over the input string. Carried by every parser invocation.
 ///
 /// `input` is the full slice; `index` is the byte offset of the next
-/// character to consume. Phase 1 #20 will add an arena `allocator`
-/// field for combinators that produce slices.
+/// character to consume; `allocator` is what slice-producing
+/// combinators (`many`, `sepBy`, `sequenceOf`, …) and rich-error
+/// helpers (`inContext`) allocate against.
+///
+/// Convention: caller passes an **arena**, runs the parser, reads
+/// the result, then `arena.deinit()` frees everything in bulk. The
+/// `Parser(T).runArena` convenience wraps that lifecycle.
 pub const ParseState = struct {
     input: []const u8,
     index: usize = 0,
+    allocator: std.mem.Allocator,
 
     /// Build a fresh `ParseState` positioned at the start of `input`.
-    pub fn init(input: []const u8) ParseState {
-        return .{ .input = input, .index = 0 };
+    pub fn init(input: []const u8, allocator: std.mem.Allocator) ParseState {
+        return .{ .input = input, .index = 0, .allocator = allocator };
     }
 
     /// The unconsumed tail of the input — the slice from `index` to
@@ -421,6 +427,26 @@ pub const ParseState = struct {
         self.index += step;
     }
 };
+
+/// Wraps the result of `Parser(T).runArena` together with the arena
+/// that owns every slice in it. Caller MUST call `.deinit()` exactly
+/// once — that frees the arena and every parser-allocated slice in
+/// the result (including any `context` / `notes` slices on a
+/// `ParseError`).
+pub fn ArenaResult(comptime T: type) type {
+    return struct {
+        arena: *std.heap.ArenaAllocator,
+        result: ParseResult(T),
+
+        /// Free the arena and the heap-stored arena handle. After
+        /// this, every slice in `result` is dangling.
+        pub fn deinit(self: @This()) void {
+            const child = self.arena.child_allocator;
+            self.arena.deinit();
+            child.destroy(self.arena);
+        }
+    };
+}
 
 /// Generic parser shape. A `Parser(T)` is a comptime-monomorphic
 /// function pointer that consumes a `*ParseState` and returns a
@@ -449,10 +475,38 @@ pub fn Parser(comptime T: type) type {
         }
 
         /// Run the parser against a fresh input string. Builds a
-        /// `ParseState` internally and returns the result envelope.
-        pub fn run(self: Self, input: []const u8) ParseResult(T) {
-            var state = ParseState.init(input);
+        /// `ParseState` from `input` + the caller-supplied
+        /// `allocator` and returns the result envelope. Slices that
+        /// the parser produces (including in `ParseError.context` /
+        /// `notes`) are allocated via `allocator` — caller owns them.
+        pub fn run(self: Self, input: []const u8, allocator: std.mem.Allocator) ParseResult(T) {
+            var state = ParseState.init(input, allocator);
             return self.parse(&state);
+        }
+
+        /// Convenience: allocates a heap-stored `ArenaAllocator`
+        /// backed by `child`, runs the parser inside it, and returns
+        /// an `ArenaResult` that owns the arena. Caller MUST call
+        /// `.deinit()` on the result exactly once — that frees the
+        /// arena and every slice the parser produced.
+        ///
+        /// Example:
+        /// ```zig
+        /// var owned = try parser.runArena(input, std.testing.allocator);
+        /// defer owned.deinit();
+        /// switch (owned.result) {
+        ///     .ok => |ok| useValue(ok.value),
+        ///     .err => |e| useError(e),
+        /// }
+        /// ```
+        pub fn runArena(
+            self: Self,
+            input: []const u8,
+            child: std.mem.Allocator,
+        ) std.mem.Allocator.Error!ArenaResult(T) {
+            const arena = try child.create(std.heap.ArenaAllocator);
+            arena.* = std.heap.ArenaAllocator.init(child);
+            return .{ .arena = arena, .result = self.run(input, arena.allocator()) };
         }
     };
 }

@@ -157,6 +157,32 @@ test "formatParseErrorPretty: multi-line input picks the offending line" {
     try std.testing.expectEqualStrings(expected, s);
 }
 
+// --- run / runArena -----------------------------------------------------
+
+test "Parser.run: takes an allocator and forwards it to ParseState" {
+    // str doesn't allocate, but the run signature must thread the allocator
+    // through ParseState.init for combinators that will (Phase 2 #29 many,
+    // #34 sep-by, etc.). std.testing.allocator is leak-checked.
+    const r = P.str("hi").run("hi there", std.testing.allocator);
+    try std.testing.expect(r == .ok);
+    try std.testing.expectEqualStrings("hi", r.ok.value);
+    try std.testing.expectEqual(@as(usize, 2), r.ok.index);
+}
+
+test "Parser.runArena: ok path — caller deinit frees the arena" {
+    var owned = try P.str("hello").runArena("hello world", std.testing.allocator);
+    defer owned.deinit();
+    try std.testing.expect(owned.result == .ok);
+    try std.testing.expectEqualStrings("hello", owned.result.ok.value);
+}
+
+test "Parser.runArena: err path — caller deinit still frees the arena" {
+    var owned = try P.str("hello").runArena("world", std.testing.allocator);
+    defer owned.deinit();
+    try std.testing.expect(owned.result == .err);
+    try std.testing.expectEqualStrings("str", owned.result.err.parser);
+}
+
 test "formatParseErrorPretty: includes context, hint, and notes" {
     const input = "abc";
     const notes_arr = [_]P.core.Note{

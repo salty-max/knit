@@ -40,16 +40,21 @@ const std = @import("std");
 const P = @import("parsil");
 
 pub fn main() !void {
-    const r = P.str("hello").run("hello world");
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena.deinit();
+
+    const r = P.str("hello").run("hello world", arena.allocator());
     if (r.isOk()) {
         const ok = r.ok; // value: []const u8, index: usize
         std.debug.print("matched '{s}' at offset {d}\n", .{ ok.value, ok.index });
     } else {
-        const err = r.err; // index, msg, tag
-        std.debug.print("parse failed at {d}: {s}\n", .{ err.index, err.msg });
+        const e = r.err; // parser, index, message, expected?, actual?, ...
+        std.debug.print("parse failed at {d}: {s}\n", .{ e.index, e.message });
     }
 }
 ```
+
+The allocator is used for slice-producing combinators (`many`, `sepBy`, `sequenceOf`) and for `ParseError.context` / `notes`. An **arena** is the canonical choice — `arena.deinit()` frees everything in bulk. The `.runArena(input, child)` convenience does the wrap-and-deinit-on-result for you.
 
 Requires Zig **0.16.0** or later.
 
