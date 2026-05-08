@@ -32,12 +32,17 @@ jobs:
         run: bash scripts/check-mirror.sh
 
   test:
-    name: Test (${{ matrix.os }}, ${{ matrix.mode }})
-    runs-on: ${{ matrix.os }}
+    name: Test (Linux, ${{ matrix.mode }})
+    runs-on: ubuntu-latest
+    # parsil-zig is pure Zig with no OS-specific I/O — runtime divergence
+    # across OSes is vanishingly rare. Cross-target *compile* on macOS,
+    # Windows, and wasm32-wasi is covered by the `cross-targets` job
+    # below; that catches platform-level breakage without paying for
+    # full test runs everywhere. If a consumer ever surfaces a
+    # macOS/Windows runtime regression, add OS cells back here.
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
         mode: [Debug, ReleaseSafe, ReleaseFast, ReleaseSmall]
     steps:
       - uses: actions/checkout@v4
