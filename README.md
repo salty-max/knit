@@ -1,74 +1,144 @@
 # Parsil (Zig)
 
-A tiny, composable parser toolkit for Zig. It provides a minimal core (`ParseState`, `ParseResult`, `Parser`) and small, focused parsers like `str(…)`. The goal is a clear foundation that’s easy to extend with combinators.
+A tiny, composable parser-combinator toolkit for Zig. Small parsers compose into bigger ones via combinators (`sequenceOf`, `choice`, `many`, …); a clear minimal core (`ParseState`, `ParseResult`, `Parser(T)`, `ParseError`) underpins every primitive.
 
-<details>
-<summary>Quick Start</summary>
+Parsil-zig is the Zig sibling of [parsil (TypeScript)](https://github.com/salty-max/parsil) — full API parity with parsil-TS 3.0.0 is the v1.0.0 milestone (work in progress under [v1.0.0](https://github.com/salty-max/parsil-zig/milestone/1)).
 
-- Requires Zig `0.16.0`.
-- Build and run tests:
-  - `zig build test` (native)
-  - `zig build test-all` (native + compile-only for extra targets)
-- Use in code:
+<details open>
+<summary><b>Quick Start</b></summary>
+
+```bash
+# Add parsil-zig to your project
+zig fetch --save git+https://github.com/salty-max/parsil-zig
+```
+
+In `build.zig`:
 
 ```zig
+const parsil = b.dependency("parsil_zig", .{
+    .target = target,
+    .optimize = optimize,
+}).module("parsil");
+exe.root_module.addImport("parsil", parsil);
+```
+
+In your code:
+
+```zig
+const std = @import("std");
 const P = @import("parsil");
 
-const res = P.str("hello").run("hello world");
-if (res.isOk()) {
-    const ok = res.ok; // value: []const u8, index: usize
-} else {
-    const err = res.err; // index, msg, tag
+pub fn main() !void {
+    const r = P.str("hello").run("hello world");
+    if (r.isOk()) {
+        const ok = r.ok; // value: []const u8, index: usize
+        std.debug.print("matched '{s}' at offset {d}\n", .{ ok.value, ok.index });
+    } else {
+        const err = r.err; // index, msg, tag
+        std.debug.print("parse failed at {d}: {s}\n", .{ err.index, err.msg });
+    }
 }
 ```
 
-</details>
-
-<details>
-<summary>Core Concepts</summary>
-
-- `ParseState`: holds the input slice and current index; advancing clamps to the input length and is overflow-safe.
-- `ParseResult(T)`: tagged union of `.ok` or `.err` with helpers like `isOk()`.
-- `Parser(T)`: callable wrapper with `parse(*ParseState)` and `run([]const u8)`.
+Requires Zig **0.16.0** or later.
 
 </details>
 
 <details>
-<summary>Parsers</summary>
+<summary><b>Core Concepts</b></summary>
 
-- `str(target: []const u8) Parser([]const u8)`: matches a literal at the current index.
-  - On success: returns the matched slice and advances the index.
-  - On failure (wrong start): `ExpectedLiteral` at the starting index.
-  - On failure (unexpected EOF): `UnexpectedEoF` at the first mismatched position.
+- **`ParseState`** — holds the input slice and current cursor; `.advance(n)` clamps to input length and is overflow-safe.
+- **`ParseResult(T)`** — tagged union `.ok = { value: T, index: usize }` or `.err = ParseError`. `result.isOk()` is a type guard.
+- **`Parser(T)`** — wraps a `*const fn (*ParseState) ParseResult(T)`. Run via `.run(input)` for the convenience entry point or `.parse(state)` when composing.
+- **`ParseError`** — structured error: `{ parser, index, message, expected?, actual?, context? }`. The rich shape lands fully with the v1.0.0 milestone; the current minimal form is `{ index, msg, tag }`.
 
-</details>
-
-<details>
-<summary>Roadmap</summary>
-
-- Core combinators: `map`, `then/seq`, `alt/or`, `many`, `optional`.
-- Enriched errors with expected/actual and spans.
-- More parsers: `char`, `satisfy`, numeric parsers, whitespace helpers.
+`Parser(T)` is a comptime-monomorphic function pointer — every parser captures its state via a comptime closure. Combinators that compose other parsers take their inputs as `comptime` parameters; runtime-assembled grammars use `recursive(thunk)`. There is no `*anyopaque` anywhere in the library.
 
 </details>
 
 <details>
-<summary>Development</summary>
+<summary><b>Parsers (current shipping set)</b></summary>
 
-- Format: `zig fmt .`
-- Test:
-  - Native: `zig build test`
-  - Cross targets (compile-only in addition to native run): `zig build test-all`
+| Symbol | Type | Description |
+|--------|------|-------------|
+| `str(target: []const u8)` | `Parser([]const u8)` | Match an exact literal at the cursor. |
+| `Parser(T).run(input)` | `ParseResult(T)` | Run a parser against an input string. |
+| `Parser(T).parse(*ParseState)` | `ParseResult(T)` | Run a parser against an existing state (for composition). |
+
+The full Phase 2 set (`char`, `digits`, `letters`, `sequenceOf`, `choice`, `many`, `sepBy`, `between`, `possibly`, `lookAhead`, `peek`, `endOfInput`, `everythingUntil`, `recover`, `recursive`, `lexeme`, `lang`, `binary`, `bit`, …) lands progressively under [milestone v1.0.0](https://github.com/salty-max/parsil-zig/milestone/1).
 
 </details>
 
 <details>
-<summary>Compatibility</summary>
+<summary><b>Roadmap</b></summary>
 
-- Minimum Zig version: `0.16.0` (see `build.zig.zon`).
-- Cross-targets compiled in build: Linux (x86_64), macOS (aarch64), Windows (x86_64, aarch64), and WASM (wasm32-wasi).
-- CI runs on macOS and Linux and checks native tests plus cross-target compilation.
+The work is organized as four phases tracked by parent issues:
+
+- [Phase 0 — Tooling](https://github.com/salty-max/parsil-zig/issues/1): build/test/lint/CI/release pipeline + conventions
+- [Phase 1 — Core foundation](https://github.com/salty-max/parsil-zig/issues/2): rich errors, arena allocator, full `Parser(T)` method surface
+- [Phase 2 — Parser parity](https://github.com/salty-max/parsil-zig/issues/3): port every parsil-TS 3 parser to Zig
+- [Phase 3 — Release](https://github.com/salty-max/parsil-zig/issues/4): cut v1.0.0
+
+</details>
+
+<details>
+<summary><b>Development</b></summary>
+
+Three external tools, all single-binary installs:
+
+```bash
+# macOS (Homebrew)
+brew install zig lefthook convco
+
+# Linux (apt or your distro's equivalent)
+# zig:      see https://ziglang.org/download/
+# lefthook: https://github.com/evilmartians/lefthook#install
+# convco:   cargo install convco  (or download release binary)
+```
+
+After cloning:
+
+```bash
+lefthook install                  # wires git hooks
+zig build --help                  # discover every dev command
+zig build ci                      # what CI runs: lint + 4 release modes + cross-target compile
+```
+
+Common `zig build` steps:
+
+| Step | Purpose |
+|------|---------|
+| `zig build` | Build the library |
+| `zig build test` | Run native tests (Debug) |
+| `zig build test-modes` | Run tests in Debug + ReleaseSafe + ReleaseFast + ReleaseSmall |
+| `zig build test-all` | Cross-target compile on Linux, macOS, Windows, wasm32-wasi |
+| `zig build fmt` / `fmt-check` | Format / format-check |
+| `zig build lint` | Format + every static check |
+| `zig build ci` | Local equivalent of CI (lint + test-modes + test-all) |
+| `zig build changeset` | Scaffold a new changeset interactively |
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for branching, commit conventions, and the self-review loop.
+
+</details>
+
+<details>
+<summary><b>Compatibility</b></summary>
+
+- **Zig minimum**: 0.16.0 (pinned in `build.zig.zon`).
+- **Cross-targets** compiled on every PR: `x86_64-linux`, `aarch64-macos`, `x86_64-windows`, `aarch64-windows`, `wasm32-wasi`.
+- **Test runs** in CI: native Linux, every release mode (Debug, ReleaseSafe, ReleaseFast, ReleaseSmall). The library is pure Zig with no OS-specific I/O — runtime tests on macOS/Windows are mostly redundant given the cross-target compile gate.
+
+</details>
+
+<details>
+<summary><b>Contributing</b></summary>
+
+- See [CONTRIBUTING.md](./CONTRIBUTING.md) for branching, commit format, the self-review loop, and the required toolchain.
+- Bug reports and feature ideas → open a GitHub issue.
+- New parsers and combinators → use the **parser** issue template and pick up an issue from the [v1.0.0 milestone](https://github.com/salty-max/parsil-zig/milestone/1).
 
 </details>
 
 ---
+
+License: [MIT](./LICENSE).
