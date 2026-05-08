@@ -1,7 +1,8 @@
 //! Test helpers. Imported as `@import("util")` (named module wired in build.zig).
 //!
-//! Helpers are kept minimal and target the current ParseError shape. They will
-//! evolve when the rich error model lands (Phase 1 #19).
+//! Helpers target the rich `ParseError` shape from #19. Phase 1 #20 will
+//! introduce arena-allocator-aware variants for tests that need to inspect
+//! allocator state.
 
 const std = @import("std");
 const P = @import("parsil");
@@ -40,18 +41,19 @@ pub fn assertErr(comptime T: type, result: P.core.ParseResult(T)) !P.core.ParseE
     return result.err;
 }
 
-/// Assert failure at an exact cursor index with a specific tag.
-pub fn assertErrAt(comptime T: type, result: P.core.ParseResult(T), expected_index: usize, expected_tag: P.core.ParseErrorTag) !void {
+/// Assert failure at an exact cursor index, attributed to a specific
+/// parser identity (`err.parser`).
+pub fn assertErrAt(comptime T: type, result: P.core.ParseResult(T), expected_index: usize, expected_parser: []const u8) !void {
     const err = try assertErr(T, result);
     try std.testing.expectEqual(expected_index, err.index);
-    try std.testing.expectEqual(expected_tag, err.tag);
+    try std.testing.expectEqualStrings(expected_parser, err.parser);
 }
 
-/// Assert failure whose message contains the given substring.
+/// Assert failure whose `message` field contains the given substring.
 pub fn expectErrorMessageContains(comptime T: type, result: P.core.ParseResult(T), needle: []const u8) !void {
     const err = try assertErr(T, result);
-    if (std.mem.indexOf(u8, err.msg, needle) == null) {
-        std.debug.print("expected error message to contain '{s}', got: '{s}'\n", .{ needle, err.msg });
+    if (std.mem.indexOf(u8, err.message, needle) == null) {
+        std.debug.print("expected error message to contain '{s}', got: '{s}'\n", .{ needle, err.message });
         return error.MessageMismatch;
     }
 }
