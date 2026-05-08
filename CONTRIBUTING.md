@@ -65,10 +65,6 @@ docs(parsers/recursive): clarify when to use recursive vs lazy chain
 ci: cache zig install across jobs
 ```
 
-### Hard rule: no AI attribution
-
-Don't add `Co-Authored-By: Claude ...` trailers, `🤖 Generated with Claude Code` footers, or any mention of AI/Claude/assistant in commit subjects, bodies, PR titles, or PR descriptions. If your tool template adds one automatically, strip it before committing. Applies regardless of who or what is driving the commit.
-
 ## Changesets
 
 Every PR with a user-visible change drops a markdown file under `.changeset/`. Use:
@@ -119,7 +115,6 @@ Walk every line of the diff with two lenses:
 - No leftover `std.debug.print` in `src/`
 - No `// TODO` without an issue link
 - Conventional-commit headers valid; every commit has a scope
-- No AI attribution
 - Diff scoped to what the issue says — drive-by refactors go in their own PR
 - Changeset added if appropriate
 
