@@ -9,7 +9,6 @@ Parsil-zig is the Zig sibling of [parsil (TypeScript)](https://github.com/salty-
 - [Quick Start](#quick-start)
 - [Core Concepts](#core-concepts)
 - [Parsers (current shipping set)](#parsers)
-- [Roadmap](#roadmap)
 - [Development](#development)
 - [Compatibility](#compatibility)
 - [Contributing](#contributing)
@@ -82,20 +81,6 @@ Requires Zig **0.16.0** or later.
 | `Parser(T).parse(*ParseState)` | `ParseResult(T)` | Run a parser against an existing state (for composition). |
 
 The full Phase 2 set (`char`, `digits`, `letters`, `sequenceOf`, `choice`, `many`, `sepBy`, `between`, `possibly`, `lookAhead`, `peek`, `endOfInput`, `everythingUntil`, `recover`, `recursive`, `lexeme`, `lang`, `binary`, `bit`, …) lands progressively under [milestone v1.0.0](https://github.com/salty-max/parsil-zig/milestone/1).
-
-</details>
-
-<a id="roadmap"></a>
-
-<details>
-<summary><b>Roadmap</b></summary>
-
-The work is organized as four phases tracked by parent issues:
-
-- [Phase 0 — Tooling](https://github.com/salty-max/parsil-zig/issues/1): build/test/lint/CI/release pipeline + conventions
-- [Phase 1 — Core foundation](https://github.com/salty-max/parsil-zig/issues/2): rich errors, arena allocator, full `Parser(T)` method surface
-- [Phase 2 — Parser parity](https://github.com/salty-max/parsil-zig/issues/3): port every parsil-TS 3 parser to Zig
-- [Phase 3 — Release](https://github.com/salty-max/parsil-zig/issues/4): cut v1.0.0
 
 </details>
 
