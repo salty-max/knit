@@ -6,7 +6,7 @@
 #
 # Output:
 #   .changeset/<random-hex>.md
-set -e
+set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
@@ -38,15 +38,30 @@ if [[ -z "$summary" ]]; then
 fi
 
 # Random 8-char hex name. Prefer openssl, fall back to /dev/urandom + xxd, then od.
-if command -v openssl >/dev/null 2>&1; then
-  name=$(openssl rand -hex 4)
-elif command -v xxd >/dev/null 2>&1; then
-  name=$(head -c 4 /dev/urandom | xxd -p)
-else
-  name=$(od -An -N4 -tx1 /dev/urandom | tr -d ' \n')
-fi
+gen_name() {
+  if command -v openssl >/dev/null 2>&1; then
+    openssl rand -hex 4
+  elif command -v xxd >/dev/null 2>&1; then
+    head -c 4 /dev/urandom | xxd -p
+  else
+    od -An -N4 -tx1 /dev/urandom | tr -d ' \n'
+  fi
+}
 
-file=".changeset/${name}.md"
+# Loop in case of (vanishingly rare) collision.
+for _ in 1 2 3; do
+  name=$(gen_name)
+  if [[ -z "$name" ]]; then
+    echo "Failed to generate a random changeset name." >&2
+    exit 1
+  fi
+  file=".changeset/${name}.md"
+  [[ -e "$file" ]] || break
+done
+if [[ -e "$file" ]]; then
+  echo "Could not find an unused changeset name after 3 attempts." >&2
+  exit 1
+fi
 
 cat >"$file" <<EOF
 ---
