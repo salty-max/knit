@@ -214,6 +214,11 @@ CI runs the full matrix on both Linux and macOS. A test passing only in Debug is
 - `@as(`, `@ptrCast(`, `@alignCast(`, `@bitCast(` without a `// @as: <reason>` or `// safety: <reason>` comment **on the line directly above**.
 - `unreachable` and `@compileError("TODO")` without a justifying comment.
 - `std.debug.print` outside of test code.
+- `catch unreachable` — almost always hides a real error. If the error truly cannot happen, allowlist with `// allow-strict: <invariant>` and document the invariant.
+- `catch |x| return x` — verbose form of `try`. Use `try` instead.
+- `std.heap.page_allocator` direct use — libraries accept allocators from the caller; hardcoding `page_allocator` breaks the arena-per-parse convention.
+- `usingnamespace` — deprecated by the Zig style guide; pollutes the namespace and breaks readability.
+- `//!` (file-level doc comment) anywhere except `src/core.zig`. Per-file context lives in the README or in declaration-level `///` doc comments; module preambles are reserved for the core module's overview.
 
 Allowlist a violation by adding `// allow-strict: <reason>` directly above the line. Reviewer-gated; rare.
 
