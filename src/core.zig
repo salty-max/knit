@@ -50,6 +50,7 @@ pub const ParseState = struct {
 
 pub fn Parser(comptime T: type) type {
     return struct {
+        // allow-unused: type-extraction helper; used by Phase 1 combinators (#22)
         pub const Output = T;
         const Self = @This();
         const ParseFn = fn (state: *ParseState) ParseResult(T);
