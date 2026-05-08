@@ -22,6 +22,9 @@ pre-commit:
     fmt:
       glob: "*.zig"
       run: zig fmt --check {staged_files}
+    imports:
+      glob: "*.zig"
+      run: bash scripts/check-imports.sh {staged_files}
 
 pre-push:
   parallel: true
