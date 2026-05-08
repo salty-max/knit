@@ -138,10 +138,16 @@ pub fn build(b: *std.Build) void {
     b.step("version", "Consume pending changesets, bump version, prepend CHANGELOG").dependOn(&changeset_version.step);
 
     // ----- Cleanup ---------------------------------------------------------
+    //
+    // Zig 0.16 dropped b.addRemoveDirTree; the documented replacement
+    // (b.addTempFiles + WriteFile API) targets temp-path lifetime, not
+    // top-level cleanup. Shell out via addSystemCommand. Unix-only — Windows
+    // contributors can run rmdir manually; clean is a dev convenience, not
+    // a CI gate.
 
-    const clean_step = b.step("clean", "Remove zig-out and .zig-cache");
-    clean_step.dependOn(&b.addRemoveDirTree(b.path("zig-out")).step);
-    clean_step.dependOn(&b.addRemoveDirTree(b.path(".zig-cache")).step);
+    const clean_step = b.step("clean", "Remove zig-out and .zig-cache (Unix only)");
+    const clean_cmd = b.addSystemCommand(&.{ "rm", "-rf", "zig-out", ".zig-cache" });
+    clean_step.dependOn(&clean_cmd.step);
 }
 
 /// Walk tests/ at build time and collect every relative path ending in
@@ -150,11 +156,11 @@ pub fn build(b: *std.Build) void {
 /// a build with zero test artifacts rather than a hard failure.
 fn collectTestFiles(b: *std.Build) []const []const u8 {
     var paths: std.ArrayList([]const u8) = .empty;
-    var dir = std.fs.cwd().openDir("tests", .{ .iterate = true }) catch return &.{};
-    defer dir.close();
+    var dir = std.Io.Dir.cwd().openDir(b.graph.io, "tests", .{ .iterate = true }) catch return &.{};
+    defer dir.close(b.graph.io);
     var walker = dir.walk(b.allocator) catch return &.{};
     defer walker.deinit();
-    while (walker.next() catch null) |entry| {
+    while (walker.next(b.graph.io) catch null) |entry| {
         if (entry.kind != .file) continue;
         if (!std.mem.endsWith(u8, entry.path, ".test.zig")) continue;
         const dup = b.allocator.dupe(u8, entry.path) catch continue;

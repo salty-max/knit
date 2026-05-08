@@ -2,7 +2,7 @@
     .name = .parsil_zig,
     .version = "0.0.0",
     .fingerprint = 0xb3f636eb95051f39,
-    .minimum_zig_version = "0.15.1",
+    .minimum_zig_version = "0.16.0",
     .dependencies = .{},
     .paths = .{
         "build.zig",

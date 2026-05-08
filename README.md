@@ -5,7 +5,7 @@ A tiny, composable parser toolkit for Zig. It provides a minimal core (`ParseSta
 <details>
 <summary>Quick Start</summary>
 
-- Requires Zig `0.15.1`.
+- Requires Zig `0.16.0`.
 - Build and run tests:
   - `zig build test` (native)
   - `zig build test-all` (native + compile-only for extra targets)
@@ -65,7 +65,7 @@ if (res.isOk()) {
 <details>
 <summary>Compatibility</summary>
 
-- Minimum Zig version: `0.15.1` (see `build.zig.zon`).
+- Minimum Zig version: `0.16.0` (see `build.zig.zon`).
 - Cross-targets compiled in build: Linux (x86_64), macOS (aarch64), Windows (x86_64, aarch64), and WASM (wasm32-wasi).
 - CI runs on macOS and Linux and checks native tests plus cross-target compilation.
 
