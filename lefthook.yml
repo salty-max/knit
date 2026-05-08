@@ -36,3 +36,5 @@ pre-push:
       run: zig build test
     unused:
       run: bash scripts/check-unused.sh
+    mirror:
+      run: bash scripts/check-mirror.sh

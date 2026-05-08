@@ -20,6 +20,8 @@ pub fn ParseResult(comptime T: type) type {
         },
         err: ParseError,
 
+        // allow-unused: public type guard; tests use direct '== .ok' pattern,
+        // but consumers can call `.isOk()`. Mirrors parsil-TS's type guards.
         pub fn isOk(self: @This()) bool {
             return switch (self) {
                 .ok => true,
