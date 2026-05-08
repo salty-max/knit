@@ -115,12 +115,16 @@ pub fn build(b: *std.Build) void {
     const check_mirror = b.addSystemCommand(&.{ "bash", "scripts/check-mirror.sh" });
     b.step("mirror", "Verify every parser has its mirror test").dependOn(&check_mirror.step);
 
+    const check_test_alloc = b.addSystemCommand(&.{ "bash", "scripts/check-testing-allocator.sh" });
+    b.step("testing-allocator", "Require std.testing.allocator in alloc-touching tests").dependOn(&check_test_alloc.step);
+
     const lint_step = b.step("lint", "Run every static check CI runs");
     lint_step.dependOn(&fmt_check.step);
     lint_step.dependOn(&check_imports.step);
     lint_step.dependOn(&check_unused.step);
     lint_step.dependOn(&check_strict.step);
     lint_step.dependOn(&check_mirror.step);
+    lint_step.dependOn(&check_test_alloc.step);
 
     // ----- All-in-one CI ---------------------------------------------------
 
