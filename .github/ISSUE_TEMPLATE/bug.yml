@@ -1,0 +1,59 @@
+name: Bug report
+description: Something isn't working as expected
+title: "fix: <short description>"
+labels: ["bug"]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: One-paragraph description of the bug.
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction
+      description: Minimal Zig snippet plus the input that triggers it.
+      render: zig
+    validations:
+      required: true
+
+  - type: input
+    id: expected
+    attributes:
+      label: Expected behaviour
+      placeholder: "e.g. parser returns .ok with value \"foo\" at index 3"
+    validations:
+      required: true
+
+  - type: input
+    id: actual
+    attributes:
+      label: Actual behaviour
+      placeholder: "e.g. parser returns .err with index 0"
+    validations:
+      required: true
+
+  - type: input
+    id: zig-version
+    attributes:
+      label: Zig version
+      placeholder: "0.16.0"
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: OS / target
+      placeholder: "macOS 14.5 (aarch64) — or wasm32-wasi"
+    validations:
+      required: true
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: Stack traces, prior versions where it worked, related issues.
