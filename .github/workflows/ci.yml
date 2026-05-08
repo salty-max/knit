@@ -6,32 +6,56 @@ on:
   pull_request:
     branches: [main]
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
-  build:
-    name: zig 0.15.1 (${{ matrix.os }})
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: mlugg/setup-zig@v2
+        with:
+          version: 0.15.1
+      - run: zig version
+      - name: Format check
+        run: zig build fmt-check
+      - name: Imports
+        run: bash scripts/check-imports.sh
+      - name: Unused exports
+        run: bash scripts/check-unused.sh
+      - name: Strict (anyerror, *anyopaque, casts, debug.print)
+        run: bash scripts/check-strict.sh
+      - name: Mirror layout
+        run: bash scripts/check-mirror.sh
+
+  test:
+    name: Test (${{ matrix.os }}, ${{ matrix.mode }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
-
+        mode: [Debug, ReleaseSafe, ReleaseFast, ReleaseSmall]
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Zig
-        uses: mlugg/setup-zig@v2
+      - uses: actions/checkout@v4
+      - uses: mlugg/setup-zig@v2
         with:
           version: 0.15.1
+      - name: Build
+        run: zig build -Doptimize=${{ matrix.mode }} -freference-trace
+      - name: Test
+        run: zig build test -Doptimize=${{ matrix.mode }} -freference-trace
 
-      - name: Zig version
-        run: zig version
-
-      - name: Format
-        run: zig fmt --check .
-
-      - name: Build and run tests (native)
-        run: zig build test -freference-trace
-
-      - name: Cross-target compile tests (compile-only)
+  cross-targets:
+    name: Cross-target compile
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: mlugg/setup-zig@v2
+        with:
+          version: 0.15.1
+      - name: test-all (compile-only on extra targets)
         run: zig build test-all -freference-trace
