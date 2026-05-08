@@ -38,3 +38,5 @@ pre-push:
       run: bash scripts/check-unused.sh
     mirror:
       run: bash scripts/check-mirror.sh
+    testing-allocator:
+      run: bash scripts/check-testing-allocator.sh
