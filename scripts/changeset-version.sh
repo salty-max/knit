@@ -7,9 +7,13 @@
 #   bash scripts/changeset-version.sh
 #
 # Idempotent: running twice with no pending changesets is a no-op.
-set -e
+set -euo pipefail
 
 cd "$(dirname "$0")/.."
+
+# Clean up any temp files we might leave on interrupt.
+cleanup() { rm -f build.zig.zon.tmp CHANGELOG.md.tmp; }
+trap cleanup EXIT INT TERM
 
 # Collect pending changesets (everything in .changeset/*.md except README.md).
 changesets=()
@@ -73,10 +77,15 @@ for cs in "${changesets[@]}"; do
   bullets+="- $summary"$'\n'
 done
 
-# Read current version from build.zig.zon.
-current=$(grep -E '\.version[[:space:]]*=[[:space:]]*"[^"]*"' build.zig.zon | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
+# Read current version from build.zig.zon. Constrain to N.N.N so we fail
+# loudly on prerelease/build-metadata suffixes the bump logic doesn't handle.
+# `|| true` so an empty grep (no match) doesn't trip pipefail before our error.
+current=$({ grep -E '\.version[[:space:]]*=[[:space:]]*"[0-9]+\.[0-9]+\.[0-9]+"' build.zig.zon || true; } \
+  | head -1 \
+  | sed -E 's/.*"([^"]+)".*/\1/')
 if [[ -z "$current" ]]; then
-  echo "Could not parse .version from build.zig.zon" >&2
+  echo "Could not parse a 3-part semver from build.zig.zon's .version field." >&2
+  echo "Pre-release / build-metadata suffixes are not supported." >&2
   exit 1
 fi
 
@@ -92,7 +101,9 @@ sed -E "s/(\.version[[:space:]]*=[[:space:]]*\")$current(\")/\1$new_version\2/" 
 mv build.zig.zon.tmp build.zig.zon
 
 # Prepend a new section to CHANGELOG.md, preserving the existing header + body.
-date_iso=$(date +%Y-%m-%d)
+# UTC date so two maintainers in different timezones cutting the same tag
+# get the same CHANGELOG entry.
+date_iso=$(date -u +%Y-%m-%d)
 new_section="## v$new_version - $date_iso
 
 $bullets"
