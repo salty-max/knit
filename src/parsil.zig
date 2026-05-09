@@ -54,3 +54,14 @@ pub const letter = @import("parsers/letters/letter.zig").letter;
 /// Match one-or-more ASCII letters, returning the byte slice. See
 /// `parsers/letters/letters.zig`.
 pub const letters = @import("parsers/letters/letters.zig").letters;
+
+/// Match zero-or-more ASCII whitespace bytes (space, tab, `\n`,
+/// `\r`), returning the byte slice. Always succeeds. See
+/// `parsers/whitespace/whitespace.zig`.
+pub const whitespace = @import("parsers/whitespace/whitespace.zig").whitespace;
+
+/// Match one-or-more ASCII whitespace bytes, returning the byte
+/// slice. Fails with `kind = .incomplete` on empty input,
+/// `.syntactic` on a non-whitespace cursor. See
+/// `parsers/whitespace/whitespace1.zig`.
+pub const whitespace1 = @import("parsers/whitespace/whitespace1.zig").whitespace1;
