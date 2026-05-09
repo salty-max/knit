@@ -132,3 +132,7 @@ pub const endOfInput = @import("parsers/end-of-input/end-of-input.zig").endOfInp
 /// Assert the cursor is at the start of input (index 0). Returns
 /// `Parser(void)`. See `parsers/start-of-input/start-of-input.zig`.
 pub const startOfInput = @import("parsers/start-of-input/start-of-input.zig").startOfInput;
+
+/// Match a parser exactly `n` times (comptime `n`). Returns
+/// `Parser([]T)`. See `parsers/exactly/exactly.zig`.
+pub const exactly = @import("parsers/exactly/exactly.zig").exactly;
