@@ -1,5 +1,6 @@
 const std = @import("std");
 const core = @import("core");
+const internal = @import("internal.zig");
 
 /// Match a specific UTF-8 codepoint at the cursor. Advances by the
 /// codepoint's byte width on success.
@@ -31,7 +32,7 @@ pub fn char(comptime c: u21) core.Parser(u21) {
         const expected_str: []const u8 = &expected_bytes;
 
         fn parse(state: *core.ParseState) core.ParseResult(u21) {
-            const decoded = core.decodeNext(state) catch |err| return decodeErrorToParseError(err, state.index, "char", expected_str);
+            const decoded = core.decodeNext(state) catch |err| return internal.decodeErrorToParseError(err, state.index, "char", expected_str);
             if (decoded.cp != c) {
                 return .{ .err = core.parseError("char", state.index, "unexpected codepoint", .{
                     .expected = expected_str,
@@ -44,30 +45,4 @@ pub fn char(comptime c: u21) core.Parser(u21) {
         }
     };
     return .{ .parseFn = &Thunk.parse };
-}
-
-/// Translate a `Utf8DecodeError` into a `ParseError` with the right
-/// `kind`, parser identity, and an optional `expected` carried over
-/// from the calling parser (so EOF errors still tell consumers what
-/// the parser was looking for). Shared by all char-family parsers.
-pub fn decodeErrorToParseError(
-    err: core.Utf8DecodeError,
-    index: usize,
-    parser_name: []const u8,
-    expected: ?[]const u8,
-) core.ParseResult(u21) {
-    return switch (err) {
-        error.UnexpectedEof => .{ .err = core.parseError(parser_name, index, "unexpected end of input", .{
-            .kind = .incomplete,
-            .expected = expected,
-        }) },
-        error.Utf8Invalid => .{ .err = core.parseError(parser_name, index, "invalid UTF-8 sequence", .{
-            .kind = .lexical,
-            .expected = expected,
-        }) },
-        error.Utf8Truncated => .{ .err = core.parseError(parser_name, index, "incomplete UTF-8 sequence", .{
-            .kind = .incomplete,
-            .expected = expected,
-        }) },
-    };
 }

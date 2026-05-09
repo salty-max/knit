@@ -1,6 +1,5 @@
 const core = @import("core");
-const char_mod = @import("char.zig");
-const one_of_mod = @import("one-of.zig");
+const internal = @import("internal.zig");
 
 /// Match a single UTF-8 codepoint that does NOT appear in `set`.
 ///
@@ -12,10 +11,10 @@ const one_of_mod = @import("one-of.zig");
 /// ```
 pub fn noneOf(comptime set: []const u21) core.Parser(u21) {
     const Thunk = struct {
-        const expected_str = one_of_mod.formatSet(set, "none of");
+        const expected_str = internal.formatSet(set, "none of");
 
         fn parse(state: *core.ParseState) core.ParseResult(u21) {
-            const decoded = core.decodeNext(state) catch |err| return char_mod.decodeErrorToParseError(err, state.index, "noneOf", expected_str);
+            const decoded = core.decodeNext(state) catch |err| return internal.decodeErrorToParseError(err, state.index, "noneOf", expected_str);
             for (set) |c| {
                 if (decoded.cp == c) {
                     return .{ .err = core.parseError("noneOf", state.index, "codepoint in forbidden set", .{
