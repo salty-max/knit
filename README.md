@@ -165,7 +165,7 @@ Requires Zig **0.16.0** or later.
 
 | Symbol | Type | Description |
 |--------|------|-------------|
-| `linecol(input, index)` | `LineCol` | Convert a byte offset to 1-indexed `(line, col)`. Recognises LF / CRLF / CR as one line break each. Columns are byte-counted (UI-side post-processing required for codepoint-counted columns). |
+| `linecol(input, index)` | `LineCol` | Convert a byte offset to 1-indexed `(line, col)`. Recognises LF, CRLF, and CR as line breaks — works regardless of the OS that produced the input. Columns are byte-counted (UI-side post-processing required for codepoint-counted columns). |
 | `LineCol` | `struct { line: usize, col: usize }` | The 1-indexed line/col pair returned by `linecol`. |
 
 ### Running

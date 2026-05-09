@@ -232,6 +232,10 @@ test "linecol: CRLF counts as a single line break" {
 
 test "linecol: classic-Mac CR alone counts as a line break" {
     // "abc\rdef" — index 4 is on 'd' (post the CR).
+    // Supporting all three line-break conventions (LF, CRLF, CR)
+    // means linecol works regardless of the OS that produced the
+    // input — including pre-2001 Mac OS files surfacing in legacy
+    // imports.
     const lc = P.core.linecol("abc\rdef", 4);
     try std.testing.expectEqual(@as(usize, 2), lc.line);
     try std.testing.expectEqual(@as(usize, 1), lc.col);

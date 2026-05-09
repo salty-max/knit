@@ -5,9 +5,9 @@ pub const LineCol = struct { line: usize, col: usize };
 /// diagnostic display.
 ///
 /// Recognised line-break sequences (each counts as exactly one line):
-/// - `\n` (LF) — Unix
+/// - `\n` (LF) — Unix / modern macOS
 /// - `\r\n` (CRLF) — Windows
-/// - `\r` alone — classic Mac OS (pre-OS X)
+/// - `\r` alone — classic Mac OS (pre-2001)
 ///
 /// `index` past the end of `input` clamps to the last byte. Tabs
 /// occupy one column (consumers can post-process if their UI
