@@ -9,6 +9,11 @@ const max_preview_bytes: usize = 16;
 /// `actual` borrows the leftover prefix (capped at 16 bytes for
 /// readability) directly from `state.input`. Zero allocation.
 ///
+/// **UTF-8 truncation caveat.** The 16-byte cap is byte-level, so
+/// the preview can end mid-codepoint and contain invalid UTF-8.
+/// `formatParseErrorPretty` prints `actual` verbatim — consumers
+/// that render to a strict UI should validate or sanitize first.
+///
 /// Common pattern — assert the entire input was consumed:
 ///
 /// ```zig
