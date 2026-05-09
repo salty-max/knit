@@ -17,10 +17,11 @@ test "satisfy: matches when predicate returns true" {
 
 test "satisfy: rejects when predicate returns false, parser = supplied name" {
     const p = comptime P.satisfy(isDigit, "digit");
-    const r = p.run("xyz", a);
-    try std.testing.expect(r == .err);
-    try std.testing.expectEqualStrings("digit", r.err.parser);
-    try std.testing.expectEqual(P.core.ParseErrorKind.syntactic, r.err.kind);
+    var owned = try p.runArena("xyz", a);
+    defer owned.deinit();
+    try std.testing.expect(owned.result == .err);
+    try std.testing.expectEqualStrings("digit", owned.result.err.parser);
+    try std.testing.expectEqual(P.core.ParseErrorKind.syntactic, owned.result.err.kind);
 }
 
 test "satisfy: empty input emits incomplete with the supplied parser name" {
@@ -29,4 +30,14 @@ test "satisfy: empty input emits incomplete with the supplied parser name" {
     try std.testing.expect(r == .err);
     try std.testing.expectEqualStrings("digit", r.err.parser);
     try std.testing.expectEqual(P.core.ParseErrorKind.incomplete, r.err.kind);
+}
+
+test "satisfy: mismatch carries actual (the codepoint that failed)" {
+    const p = comptime P.satisfy(isDigit, "digit");
+    var owned = try p.runArena("xyz", a);
+    defer owned.deinit();
+    try std.testing.expect(owned.result == .err);
+    try std.testing.expectEqualStrings("x", owned.result.err.actual.?);
+    // satisfy doesn't expose a structured `expected` (predicate is opaque).
+    try std.testing.expect(owned.result.err.expected == null);
 }

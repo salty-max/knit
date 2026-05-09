@@ -18,15 +18,10 @@ const char_mod = @import("char.zig");
 pub fn satisfy(comptime predicate: fn (u21) bool, comptime name: []const u8) core.Parser(u21) {
     const Thunk = struct {
         fn parse(state: *core.ParseState) core.ParseResult(u21) {
-            const decoded = core.decodeNext(state) catch |err| {
-                const r = char_mod.decodeErrorToParseError(err, state.index);
-                // Re-tag the parser identity from "char" to the supplied name.
-                var e = r.err;
-                e.parser = name;
-                return .{ .err = e };
-            };
+            const decoded = core.decodeNext(state) catch |err| return char_mod.decodeErrorToParseError(err, state.index, name, null);
             if (!predicate(decoded.cp)) {
                 return .{ .err = core.parseError(name, state.index, "predicate did not match", .{
+                    .actual = core.encodeCpAlloc(state.allocator, decoded.cp),
                     .kind = .syntactic,
                 }) };
             }
