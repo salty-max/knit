@@ -494,7 +494,7 @@ pub fn Spanned(comptime T: type) type {
 ///
 /// **Comptime composition.** The fluent methods on `Parser(T)` —
 /// `.map`, `.chain`, `.errorMap`, `.skip`, `.then`, `.between`,
-/// `.lookahead`, `.withSpan`, `.spanMap` — all take `comptime self`.
+/// `.lookAhead`, `.withSpan`, `.spanMap` — all take `comptime self`.
 /// Composed parsers must be built at comptime. Runtime-assembled
 /// grammars (e.g. mutually recursive ones) use `recursive(thunk)`
 /// (#41) instead.
@@ -642,11 +642,11 @@ pub fn Parser(comptime T: type) type {
         /// restored). Use to peek at upcoming structure without
         /// committing to it.
         ///
-        /// On success the result's `index` reports the pre-lookahead
+        /// On success the result's `index` reports the pre-`lookAhead`
         /// position too — semantically "we didn't advance". On
         /// failure the error keeps the inner parser's failure index,
         /// which is what you want for diagnostics.
-        pub fn lookahead(comptime self: Self) Self {
+        pub fn lookAhead(comptime self: Self) Self {
             const Thunk = struct {
                 fn parse(state: *ParseState) ParseResult(T) {
                     const saved = state.index;

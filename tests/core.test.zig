@@ -74,16 +74,16 @@ test "Parser.between: parses left + self + right, keeps self" {
     try std.testing.expectEqualStrings("x", r.ok.value);
 }
 
-test "Parser.lookahead: succeeds without consuming" {
-    const peek = comptime P.str("hi").lookahead();
+test "Parser.lookAhead: succeeds without consuming" {
+    const peek = comptime P.str("hi").lookAhead();
     const r = peek.run("hi there", a);
     try std.testing.expect(r == .ok);
     try std.testing.expectEqualStrings("hi", r.ok.value);
     try std.testing.expectEqual(@as(usize, 0), r.ok.index);
 }
 
-test "Parser.lookahead: forwards err with cursor restored" {
-    const peek = comptime P.str("hi").lookahead();
+test "Parser.lookAhead: forwards err with cursor restored" {
+    const peek = comptime P.str("hi").lookAhead();
     const r = peek.run("bye", a);
     try std.testing.expect(r == .err);
     try std.testing.expectEqual(@as(usize, 0), r.err.index);
