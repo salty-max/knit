@@ -127,6 +127,7 @@ Requires Zig **0.16.0** or later.
 | `between(left, p, right)` | `Parser(T)` | Run `left`, `p`, `right`; keep only `p`'s value. Free-function complement to `Parser(T).between`. |
 | `lookAhead(p)` | `Parser(T)` | Run `p` non-consuming; success keeps the value but restores the cursor; failure passes through with cursor also restored. Free-function complement to `Parser(T).lookAhead`. |
 | `peek()` | `Parser(u8)` | Return the byte at the cursor without advancing. Byte-level (no UTF-8 decode). EOF → `.incomplete`. |
+| `endOfInput()` | `Parser(void)` | Assert the cursor is at end-of-input. Err carries `actual` borrowed from the leftover prefix (capped at 16 bytes). |
 
 ### Alternative combinators
 

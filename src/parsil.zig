@@ -124,3 +124,7 @@ pub const lookAhead = @import("parsers/look-ahead/look-ahead.zig").lookAhead;
 /// Return the byte at the cursor without advancing; EOF → err.
 /// See `parsers/peek/peek.zig`.
 pub const peek = @import("parsers/peek/peek.zig").peek;
+
+/// Assert the cursor is at end-of-input. Returns `Parser(void)`.
+/// See `parsers/end-of-input/end-of-input.zig`.
+pub const endOfInput = @import("parsers/end-of-input/end-of-input.zig").endOfInput;
