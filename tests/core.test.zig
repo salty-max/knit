@@ -12,7 +12,6 @@ test "parseError: factory builds the rich shape with defaults" {
     try std.testing.expect(e.actual == null);
     try std.testing.expect(e.hint == null);
     try std.testing.expectEqual(@as(usize, 0), e.context.len);
-    try std.testing.expectEqual(@as(usize, 0), e.notes.len);
 }
 
 test "parseError: factory carries expected and actual" {
@@ -39,20 +38,11 @@ test "parseError: factory carries severity and kind" {
     try std.testing.expectEqual(P.core.ParseErrorKind.incomplete, e.kind);
 }
 
-test "parseError: factory carries hint and notes" {
-    const notes_arr = [_]P.core.Note{
-        .{ .message = "definition was here", .index = 10 },
-        .{ .message = "consider renaming", .hint = "use snake_case" },
-    };
+test "parseError: factory carries hint" {
     const e = P.core.parseError("ident", 5, "name conflict", .{
-        .hint = "shadowing detected",
-        .notes = &notes_arr,
+        .hint = "did you mean 'foo'?",
     });
-    try std.testing.expectEqualStrings("shadowing detected", e.hint.?);
-    try std.testing.expectEqual(@as(usize, 2), e.notes.len);
-    try std.testing.expectEqualStrings("definition was here", e.notes[0].message);
-    try std.testing.expectEqual(@as(?usize, 10), e.notes[0].index);
-    try std.testing.expectEqualStrings("use snake_case", e.notes[1].hint.?);
+    try std.testing.expectEqualStrings("did you mean 'foo'?", e.hint.?);
 }
 
 // --- formatParseError (one-line) ----------------------------------------
@@ -199,11 +189,8 @@ test "Parser.runArena: err path — caller deinit still frees the arena" {
     try std.testing.expectEqualStrings("str", owned.result.err.parser);
 }
 
-test "formatParseErrorPretty: includes context, hint, and notes" {
+test "formatParseErrorPretty: includes context and hint" {
     const input = "abc";
-    const notes_arr = [_]P.core.Note{
-        .{ .message = "earlier site", .index = 0 },
-    };
     const err: P.core.ParseError = .{
         .parser = "ident",
         .index = 2,
@@ -211,7 +198,6 @@ test "formatParseErrorPretty: includes context, hint, and notes" {
         .expected = "x",
         .context = &.{ "outer", "inner" },
         .hint = "rename one",
-        .notes = &notes_arr,
     };
     const s = try P.core.formatParseErrorPretty(std.testing.allocator, input, err);
     defer std.testing.allocator.free(s);
@@ -221,10 +207,6 @@ test "formatParseErrorPretty: includes context, hint, and notes" {
         "  |\n" ++
         "1 | abc\n" ++
         "  |   ^ expected 'x'\n" ++
-        "  = hint: rename one\n" ++
-        "  note: earlier site\n" ++
-        "  |\n" ++
-        "1 | abc\n" ++
-        "  | ^\n";
+        "  = hint: rename one\n";
     try std.testing.expectEqualStrings(expected, s);
 }
