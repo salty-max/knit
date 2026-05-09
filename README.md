@@ -131,6 +131,13 @@ Requires Zig **0.16.0** or later.
 |--------|------|-------------|
 | `choice(T, parsers)` | `Parser(T)` | First-success-wins across a homogeneous slice of `Parser(T)`; full backtrack between attempts; on total failure returns the inner error that reached the furthest cursor (ties: earliest in list). Compile-time error on empty slice. |
 
+### Repetition combinators
+
+| Symbol | Type | Description |
+|--------|------|-------------|
+| `many(T, p)` | `Parser([]T)` | Run `p` zero-or-more times; always succeeds. Stops on inner failure OR on no-progress (inner succeeded without consuming input — guards against infinite loops). |
+| `manyOne(T, p)` | `Parser([]T)` | One-or-more; fails with `p`'s own error if zero matches. |
+
 ### Error-context wrappers
 
 | Symbol | Type | Description |
