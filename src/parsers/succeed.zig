@@ -1,4 +1,4 @@
-const core = @import("../core.zig");
+const core = @import("core");
 
 /// A parser that always succeeds with the supplied `value`, never
 /// consuming input. Useful as the identity element in `choice`

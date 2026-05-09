@@ -1,5 +1,5 @@
 const std = @import("std");
-const core = @import("../core.zig");
+const core = @import("core");
 
 /// Match the literal `target` at the current cursor.
 ///
