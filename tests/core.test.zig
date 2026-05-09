@@ -223,6 +223,31 @@ test "linecol: empty input is line 1, col 1" {
     try std.testing.expectEqual(@as(usize, 1), lc.col);
 }
 
+test "linecol: CRLF counts as a single line break" {
+    // "abc\r\ndef" — index 5 is on 'd' (post the CRLF pair).
+    const lc = P.core.linecol("abc\r\ndef", 5);
+    try std.testing.expectEqual(@as(usize, 2), lc.line);
+    try std.testing.expectEqual(@as(usize, 1), lc.col);
+}
+
+test "linecol: classic-Mac CR alone counts as a line break" {
+    // "abc\rdef" — index 4 is on 'd' (post the CR).
+    const lc = P.core.linecol("abc\rdef", 4);
+    try std.testing.expectEqual(@as(usize, 2), lc.line);
+    try std.testing.expectEqual(@as(usize, 1), lc.col);
+}
+
+test "linecol: top-level barrel export resolves the same helper" {
+    // Cross-check: `parsil.linecol(...)` (the new top-level export
+    // added in this PR) is bit-for-bit the same function as
+    // `parsil.core.linecol(...)`. The barrel re-export preserves
+    // behavior and adds an ergonomic top-level entry point.
+    const lc1 = P.linecol("abc\ndef", 5);
+    const lc2 = P.core.linecol("abc\ndef", 5);
+    try std.testing.expectEqual(lc1.line, lc2.line);
+    try std.testing.expectEqual(lc1.col, lc2.col);
+}
+
 // --- formatParseErrorPretty ---------------------------------------------
 
 test "formatParseErrorPretty: single-line input renders header + snippet + caret" {

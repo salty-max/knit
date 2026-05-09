@@ -161,6 +161,13 @@ Requires Zig **0.16.0** or later.
 | `inContext(T, label, p)` | `Parser(T)` | Push `label` onto `err.context` outer-first; success transparent. |
 | `label(T, name, p)` | `Parser(T)` | Replace `err.parser` with `name`; other fields unchanged. |
 
+### Diagnostics helpers
+
+| Symbol | Type | Description |
+|--------|------|-------------|
+| `linecol(input, index)` | `LineCol` | Convert a byte offset to 1-indexed `(line, col)`. Recognises LF / CRLF / CR as one line break each. Columns are byte-counted (UI-side post-processing required for codepoint-counted columns). |
+| `LineCol` | `struct { line: usize, col: usize }` | The 1-indexed line/col pair returned by `linecol`. |
+
 ### Running
 
 | Symbol | Type | Description |
