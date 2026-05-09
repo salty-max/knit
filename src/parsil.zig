@@ -150,3 +150,8 @@ pub const everythingUntil = @import("parsers/everything-until/everything-until.z
 /// UTF-8 codepoint width per iteration. See
 /// `parsers/everything-until/every-char-until.zig`.
 pub const everyCharUntil = @import("parsers/everything-until/every-char-until.zig").everyCharUntil;
+
+/// Error recovery / synchronization: on `p` failure, scan forward
+/// until any of `anchors` would match, then return `ok null` at
+/// the recovery point. See `parsers/recover/recover-at.zig`.
+pub const recoverAt = @import("parsers/recover/recover-at.zig").recoverAt;
