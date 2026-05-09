@@ -79,3 +79,32 @@ test "sequenceOf: TupleResult is a structural tuple type" {
     try std.testing.expectEqual(@as(usize, 2), ti.@"struct".fields.len);
     try std.testing.expect(ti.@"struct".is_tuple);
 }
+
+test "sequenceOf: empty tuple succeeds trivially without consuming input" {
+    const p = comptime P.sequenceOf(.{});
+    const r = p.run("anything", a);
+    try std.testing.expect(r == .ok);
+    try std.testing.expectEqual(@as(usize, 0), r.ok.index);
+}
+
+test "sequenceOf: single-parser tuple is a thin pass-through" {
+    const p = comptime P.sequenceOf(.{P.str("x")});
+    const r = p.run("xy", a);
+    try std.testing.expect(r == .ok);
+    try std.testing.expectEqualStrings("x", r.ok.value[0]);
+    try std.testing.expectEqual(@as(usize, 1), r.ok.index);
+}
+
+test "sequenceOf: composes with .map() to build a typed struct" {
+    const Pair = struct { num: []const u8, name: []const u8 };
+    const Build = struct {
+        fn build(t: P.TupleResult(@TypeOf(.{ P.digits(), P.whitespace1(), P.letters() }))) Pair {
+            return .{ .num = t[0], .name = t[2] };
+        }
+    };
+    const p = comptime P.sequenceOf(.{ P.digits(), P.whitespace1(), P.letters() }).map(Pair, Build.build);
+    const r = p.run("42 alice", a);
+    try std.testing.expect(r == .ok);
+    try std.testing.expectEqualStrings("42", r.ok.value.num);
+    try std.testing.expectEqualStrings("alice", r.ok.value.name);
+}

@@ -12,8 +12,7 @@ pub fn TupleResult(comptime ParsersType: type) type {
     const fields = @typeInfo(ParsersType).@"struct".fields;
     var types: [fields.len]type = undefined;
     for (fields, 0..) |f, i| types[i] = f.type.Output;
-    const final = types;
-    return @Tuple(&final);
+    return @Tuple(&types);
 }
 
 /// Run a heterogeneous sequence of parsers and collect the success
