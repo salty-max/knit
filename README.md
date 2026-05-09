@@ -87,6 +87,13 @@ Requires Zig **0.16.0** or later.
 | `fail(error)` | `Parser(noreturn)` | Always fail with the supplied `ParseError`. |
 | `succeed(T, value)` | `Parser(T)` | Always succeed with the supplied value, no input consumed. |
 
+### Error-context wrappers
+
+| Symbol | Type | Description |
+|--------|------|-------------|
+| `inContext(T, label, p)` | `Parser(T)` | Push `label` onto `err.context` outer-first; success transparent. |
+| `label(T, name, p)` | `Parser(T)` | Replace `err.parser` with `name`; other fields unchanged. |
+
 ### Running
 
 | Symbol | Type | Description |
