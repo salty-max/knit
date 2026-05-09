@@ -80,3 +80,11 @@ pub const TupleResult = @import("parsers/sequence-of/sequence-of.zig").TupleResu
 /// furthest-progress error on total failure. See
 /// `parsers/choice/choice.zig`.
 pub const choice = @import("parsers/choice/choice.zig").choice;
+
+/// Match a parser zero-or-more times; always succeeds. See
+/// `parsers/many/many.zig`.
+pub const many = @import("parsers/many/many.zig").many;
+
+/// Match a parser one-or-more times; fails if zero matches. See
+/// `parsers/many/many-one.zig`.
+pub const manyOne = @import("parsers/many/many-one.zig").manyOne;
