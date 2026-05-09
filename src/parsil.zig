@@ -47,3 +47,10 @@ pub const digit = @import("parsers/digits/digit.zig").digit;
 /// Match one-or-more ASCII decimal digits, returning the byte slice.
 /// See `parsers/digits/digits.zig`.
 pub const digits = @import("parsers/digits/digits.zig").digits;
+
+/// Match a single ASCII letter (a-z, A-Z). See `parsers/letters/letter.zig`.
+pub const letter = @import("parsers/letters/letter.zig").letter;
+
+/// Match one-or-more ASCII letters, returning the byte slice. See
+/// `parsers/letters/letters.zig`.
+pub const letters = @import("parsers/letters/letters.zig").letters;
