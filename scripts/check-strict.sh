@@ -9,7 +9,9 @@
 #   4. `@ptrCast(` / `@alignCast(` / `@bitCast(` require `// safety: <reason>` above
 #   5. `unreachable` (as a statement) requires a justifying `//` comment above
 #   6. `@compileError("TODO"` requires a justifying `//` comment above
-#   7. `std.debug.print(` anywhere in src/ (no allowlist; use parsers/util/debugLog)
+#   7. `std.debug.print(` anywhere in src/ — exempt: parsers/util/debug-log.zig
+#      (the one parser whose entire purpose IS emitting debug output);
+#      everywhere else, use parsers/util/debugLog instead
 #   8. `catch unreachable` — almost always hides a real error
 #   9. `catch |x| return x` — verbose form of `try`; suggest the replacement
 #  10. `std.heap.page_allocator` direct use — libs accept allocators from the caller
@@ -172,9 +174,13 @@ scan_file() {
       fi
     fi
 
-    # Rule 7: std.debug.print( in src/ (no allowlist).
+    # Rule 7: std.debug.print( in src/ — banned outside debug-log.zig
+    # (which is the one parser whose entire purpose is emitting debug output).
     if [[ "$line" == *"std.debug.print("* ]] && [[ "$stripped" != "//"* ]]; then
-      report "$file" "$lineno" "std.debug.print-in-src" "$line"
+      case "$file" in
+        src/parsers/util/debug-log.zig | ./src/parsers/util/debug-log.zig) ;;
+        *) report "$file" "$lineno" "std.debug.print-in-src" "$line" ;;
+      esac
     fi
 
     prev="$line"
