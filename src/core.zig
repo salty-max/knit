@@ -430,6 +430,18 @@ pub fn ArenaResult(comptime T: type) type {
     };
 }
 
+/// Byte-offset range a parser consumed. `start <= end`; `end - start`
+/// is the number of bytes advanced. Passed to the `build` callback in
+/// `Parser(T).spanMap`.
+pub const Span = struct { start: usize, end: usize };
+
+/// Wraps a parser's success value with the byte offsets it
+/// consumed. Returned by `Parser(T).withSpan` and consumed by
+/// `Parser(T).spanMap`.
+pub fn Spanned(comptime T: type) type {
+    return struct { value: T, start: usize, end: usize };
+}
+
 /// Generic parser shape. A `Parser(T)` is a comptime-monomorphic
 /// function pointer that consumes a `*ParseState` and returns a
 /// `ParseResult(T)`.
@@ -439,6 +451,13 @@ pub fn ArenaResult(comptime T: type) type {
 /// canonical pattern. There is no `*anyopaque` context: each parser
 /// invocation resolves to a direct function call at the consumer
 /// site.
+///
+/// **Comptime composition.** The fluent methods on `Parser(T)` —
+/// `.map`, `.chain`, `.errorMap`, `.skip`, `.then`, `.between`,
+/// `.lookahead`, `.withSpan`, `.spanMap` — all take `comptime self`.
+/// Composed parsers must be built at comptime. Runtime-assembled
+/// grammars (e.g. mutually recursive ones) use `recursive(thunk)`
+/// (#41) instead.
 pub fn Parser(comptime T: type) type {
     return struct {
         /// Convenience type alias so consumers can write
@@ -489,6 +508,150 @@ pub fn Parser(comptime T: type) type {
             const arena = try child.create(std.heap.ArenaAllocator);
             arena.* = std.heap.ArenaAllocator.init(child);
             return .{ .arena = arena, .result = self.run(input, arena.allocator()) };
+        }
+
+        // ----- Fluent combinator methods (all comptime-self) ---------------
+
+        /// Transform the success value through `fn_map`. Failures
+        /// pass through unchanged.
+        pub fn map(comptime self: Self, comptime U: type, comptime fn_map: fn (T) U) Parser(U) {
+            const Thunk = struct {
+                fn parse(state: *ParseState) ParseResult(U) {
+                    const r = self.parseFn(state);
+                    if (r == .err) return .{ .err = r.err };
+                    return ok(fn_map(r.ok.value), r.ok.index);
+                }
+            };
+            return .{ .parseFn = &Thunk.parse };
+        }
+
+        /// Sequence: run `self`, hand its value to `fn_chain` to
+        /// produce the next parser, then run that. Failures from
+        /// either side propagate. Use when the next parser depends
+        /// on the value of the previous one.
+        pub fn chain(comptime self: Self, comptime U: type, comptime fn_chain: fn (T) Parser(U)) Parser(U) {
+            const Thunk = struct {
+                fn parse(state: *ParseState) ParseResult(U) {
+                    const r = self.parseFn(state);
+                    if (r == .err) return .{ .err = r.err };
+                    const next = fn_chain(r.ok.value);
+                    return next.parseFn(state);
+                }
+            };
+            return .{ .parseFn = &Thunk.parse };
+        }
+
+        /// Replace the error if `self` fails, otherwise pass through.
+        /// Used at consumer-side boundaries (token, statement,
+        /// expression) to attach a friendlier message or to reshape
+        /// the error for a downstream type system.
+        pub fn errorMap(comptime self: Self, comptime fn_err: fn (ParseError) ParseError) Self {
+            const Thunk = struct {
+                fn parse(state: *ParseState) ParseResult(T) {
+                    const r = self.parseFn(state);
+                    if (r == .err) return .{ .err = fn_err(r.err) };
+                    return r;
+                }
+            };
+            return .{ .parseFn = &Thunk.parse };
+        }
+
+        /// Run `self` then `other`, **keeping `self`'s value** and
+        /// discarding `other`'s. Equivalent to
+        /// `self.chain(@TypeOf(other).Output, |v| other.map(...))`.
+        /// Use to require a trailing delimiter (parse the value, then
+        /// skip the closing token).
+        pub fn skip(comptime self: Self, comptime other: anytype) Self {
+            const Thunk = struct {
+                fn parse(state: *ParseState) ParseResult(T) {
+                    const r = self.parseFn(state);
+                    if (r == .err) return r;
+                    const r2 = other.parseFn(state);
+                    if (r2 == .err) return .{ .err = r2.err };
+                    return ok(r.ok.value, state.index);
+                }
+            };
+            return .{ .parseFn = &Thunk.parse };
+        }
+
+        /// Run `self` then `other`, **keeping `other`'s value** and
+        /// discarding `self`'s. Use to parse-and-discard a known
+        /// prefix (e.g. a keyword) and keep the following value.
+        pub fn then(comptime self: Self, comptime other: anytype) @TypeOf(other) {
+            const O = @TypeOf(other);
+            const Thunk = struct {
+                fn parse(state: *ParseState) ParseResult(O.Output) {
+                    const r = self.parseFn(state);
+                    if (r == .err) return .{ .err = r.err };
+                    return other.parseFn(state);
+                }
+            };
+            return .{ .parseFn = &Thunk.parse };
+        }
+
+        /// Parse `left`, then `self`, then `right`, keeping only
+        /// `self`'s value. Sugar for `left.then(self).skip(right)`.
+        /// Typical use: delimited constructs like `( expr )`.
+        pub fn between(comptime self: Self, comptime left: anytype, comptime right: anytype) Self {
+            return left.then(self).skip(right);
+        }
+
+        /// Run `self` non-consuming on success: returns the value
+        /// but restores the cursor to where it was before the call.
+        /// On failure: passes the error through (cursor also
+        /// restored). Use to peek at upcoming structure without
+        /// committing to it.
+        ///
+        /// On success the result's `index` reports the pre-lookahead
+        /// position too — semantically "we didn't advance". On
+        /// failure the error keeps the inner parser's failure index,
+        /// which is what you want for diagnostics.
+        pub fn lookahead(comptime self: Self) Self {
+            const Thunk = struct {
+                fn parse(state: *ParseState) ParseResult(T) {
+                    const saved = state.index;
+                    const r = self.parseFn(state);
+                    state.index = saved;
+                    if (r == .err) return .{ .err = r.err };
+                    return ok(r.ok.value, saved);
+                }
+            };
+            return .{ .parseFn = &Thunk.parse };
+        }
+
+        /// Wrap the success value in a `Spanned(T) { value, start, end }`
+        /// carrying the byte offsets `self` consumed. Failures pass
+        /// through unchanged. Foundation for source-position-aware
+        /// AST construction.
+        pub fn withSpan(comptime self: Self) Parser(Spanned(T)) {
+            const Thunk = struct {
+                fn parse(state: *ParseState) ParseResult(Spanned(T)) {
+                    const start = state.index;
+                    const r = self.parseFn(state);
+                    if (r == .err) return .{ .err = r.err };
+                    return ok(
+                        Spanned(T){ .value = r.ok.value, .start = start, .end = state.index },
+                        state.index,
+                    );
+                }
+            };
+            return .{ .parseFn = &Thunk.parse };
+        }
+
+        /// Build a caller-shaped node from `self`'s value plus its
+        /// span. Sugar for `self.withSpan().map(U, build)`. Use to
+        /// build AST nodes that carry their own source positions.
+        pub fn spanMap(
+            comptime self: Self,
+            comptime U: type,
+            comptime build: fn (T, Span) U,
+        ) Parser(U) {
+            const Thunk = struct {
+                fn unwrap(s: Spanned(T)) U {
+                    return build(s.value, .{ .start = s.start, .end = s.end });
+                }
+            };
+            return self.withSpan().map(U, Thunk.unwrap);
         }
     };
 }

@@ -1,6 +1,116 @@
 const std = @import("std");
 const P = @import("parsil");
 
+// --- Parser(T) fluent methods -------------------------------------------
+
+const a = std.testing.allocator;
+
+test "Parser.map: transforms ok value through fn" {
+    const upper = comptime P.str("hi").map(usize, struct {
+        fn len(s: []const u8) usize {
+            return s.len;
+        }
+    }.len);
+    const r = upper.run("hi there", a);
+    try std.testing.expect(r == .ok);
+    try std.testing.expectEqual(@as(usize, 2), r.ok.value);
+}
+
+test "Parser.map: forwards err unchanged" {
+    const upper = comptime P.str("hi").map(usize, struct {
+        fn len(s: []const u8) usize {
+            return s.len;
+        }
+    }.len);
+    const r = upper.run("nope", a);
+    try std.testing.expect(r == .err);
+    try std.testing.expectEqualStrings("str", r.err.parser);
+}
+
+test "Parser.chain: feeds value into a follow-up parser" {
+    // After matching "say:", run str("hello"). Demonstrates chain even if the
+    // 'next parser' is constant — picks up parser-via-fn-return semantics.
+    const composed = comptime P.str("say:").chain([]const u8, struct {
+        fn next(_: []const u8) P.core.Parser([]const u8) {
+            return P.str("hello");
+        }
+    }.next);
+    const r = composed.run("say:hello", a);
+    try std.testing.expect(r == .ok);
+    try std.testing.expectEqualStrings("hello", r.ok.value);
+}
+
+test "Parser.errorMap: replaces the error" {
+    const wrapped = comptime P.str("hi").errorMap(struct {
+        fn map(_: P.core.ParseError) P.core.ParseError {
+            return P.core.parseError("custom", 0, "boundary error", .{});
+        }
+    }.map);
+    const r = wrapped.run("nope", a);
+    try std.testing.expect(r == .err);
+    try std.testing.expectEqualStrings("custom", r.err.parser);
+    try std.testing.expectEqualStrings("boundary error", r.err.message);
+}
+
+test "Parser.skip: keeps self's value, advances past other" {
+    const composed = comptime P.str("hello").skip(P.str("!"));
+    const r = composed.run("hello!", a);
+    try std.testing.expect(r == .ok);
+    try std.testing.expectEqualStrings("hello", r.ok.value);
+    try std.testing.expectEqual(@as(usize, 6), r.ok.index);
+}
+
+test "Parser.then: keeps other's value" {
+    const composed = comptime P.str("Mr.").then(P.str(" Bond"));
+    const r = composed.run("Mr. Bond", a);
+    try std.testing.expect(r == .ok);
+    try std.testing.expectEqualStrings(" Bond", r.ok.value);
+}
+
+test "Parser.between: parses left + self + right, keeps self" {
+    const inside = comptime P.str("x").between(P.str("("), P.str(")"));
+    const r = inside.run("(x)", a);
+    try std.testing.expect(r == .ok);
+    try std.testing.expectEqualStrings("x", r.ok.value);
+}
+
+test "Parser.lookahead: succeeds without consuming" {
+    const peek = comptime P.str("hi").lookahead();
+    const r = peek.run("hi there", a);
+    try std.testing.expect(r == .ok);
+    try std.testing.expectEqualStrings("hi", r.ok.value);
+    try std.testing.expectEqual(@as(usize, 0), r.ok.index);
+}
+
+test "Parser.lookahead: forwards err with cursor restored" {
+    const peek = comptime P.str("hi").lookahead();
+    const r = peek.run("bye", a);
+    try std.testing.expect(r == .err);
+    try std.testing.expectEqual(@as(usize, 0), r.err.index);
+}
+
+test "Parser.withSpan: wraps value with start/end byte offsets" {
+    const spanned = comptime P.str("hello").withSpan();
+    const r = spanned.run("hello world", a);
+    try std.testing.expect(r == .ok);
+    try std.testing.expectEqualStrings("hello", r.ok.value.value);
+    try std.testing.expectEqual(@as(usize, 0), r.ok.value.start);
+    try std.testing.expectEqual(@as(usize, 5), r.ok.value.end);
+}
+
+test "Parser.spanMap: builds caller-shaped node from value + span" {
+    const Node = struct { tag: []const u8, len: usize };
+    const node = comptime P.str("hello").spanMap(Node, struct {
+        fn build(v: []const u8, loc: P.core.Span) Node {
+            return .{ .tag = v, .len = loc.end - loc.start };
+        }
+    }.build);
+    const r = node.run("hello world", a);
+    try std.testing.expect(r == .ok);
+    try std.testing.expectEqualStrings("hello", r.ok.value.tag);
+    try std.testing.expectEqual(@as(usize, 5), r.ok.value.len);
+}
+
 // --- parseError factory --------------------------------------------------
 
 test "parseError: factory builds the rich shape with defaults" {
