@@ -40,34 +40,18 @@ pub const ParseErrorKind = enum {
     internal,
 };
 
-/// Secondary diagnostic note attached to a `ParseError`.
-///
-/// Notes carry information that's related to but not the primary
-/// failure — e.g. "definition of <name> was here" pointing at an
-/// earlier line. `index` is optional: notes without a position
-/// render as plain prose, with one a caret can underline a region.
-pub const Note = struct {
-    message: []const u8,
-    /// Optional secondary location in the input. When present,
-    /// `formatParseErrorPretty` underlines the byte at this offset.
-    index: ?usize = null,
-    /// Optional fix-it / suggestion attached to this note.
-    hint: ?[]const u8 = null,
-};
-
 /// Structured failure payload returned by every parser primitive.
 ///
 /// Mirrors parsil-TS 3.0's `ParseError` shape so consumers can branch
 /// on `parser` identity, read `expected`/`actual` directly, walk
-/// `context`, and surface `notes`/`hint` without parsing strings.
+/// `context`, and surface a `hint` without parsing strings.
 ///
 /// String fields (`parser`, `message`, `expected`, `actual`, `hint`,
-/// entries of `context`, fields of each `Note`) carry borrowed
-/// references — primitives emit string literals (which outlive any
-/// parse), so no allocation is required for the basic shape.
-/// Phase 1 #20 introduces an arena allocator that owns dynamic
-/// `context`/`notes` slices when `inContext` (#25) wraps a child
-/// parser.
+/// entries of `context`) carry borrowed references — primitives emit
+/// string literals (which outlive any parse), so no allocation is
+/// required for the basic shape. Phase 1 #20 introduces an arena
+/// allocator that owns dynamic `context` slices when `inContext`
+/// (#25) wraps a child parser.
 pub const ParseError = struct {
     /// Machine-readable identity of the emitting parser
     /// (`"char"`, `"str"`, `"keyword"`, …).
@@ -86,19 +70,13 @@ pub const ParseError = struct {
     /// What was actually at the position, when known.
     actual: ?[]const u8 = null,
 
-    /// Single-line fix-it / suggestion. For richer follow-up notes
-    /// (each with their own optional position), use `notes`.
+    /// Single-line fix-it / suggestion ("did you mean …?").
     hint: ?[]const u8 = null,
 
     /// Outer-first context labels accumulated by `inContext` wrappers.
     /// `&.{ "function call", "argument list" }` reads as
     /// "while parsing a function call's argument list".
     context: []const []const u8 = &.{},
-
-    /// Compiler-style secondary notes. Each note may carry its own
-    /// position and hint. The pretty formatter renders them under
-    /// the primary error.
-    notes: []const Note = &.{},
 
     /// Severity of the failure — `.fatal` (default) or `.recovered`
     /// (parser synchronized via `recoverAt`).
@@ -129,7 +107,6 @@ pub fn parseError(
         actual: ?[]const u8 = null,
         hint: ?[]const u8 = null,
         context: []const []const u8 = &.{},
-        notes: []const Note = &.{},
         severity: Severity = .fatal,
         kind: ParseErrorKind = .syntactic,
     },
@@ -142,7 +119,6 @@ pub fn parseError(
         .actual = extras.actual,
         .hint = extras.hint,
         .context = extras.context,
-        .notes = extras.notes,
         .severity = extras.severity,
         .kind = extras.kind,
     };
@@ -180,7 +156,7 @@ pub fn linecol(input: []const u8, index: usize) LineCol {
 /// The context bracket is omitted when there is no context.
 ///
 /// For the multi-line caret-and-snippet form (line/col, source
-/// underline, notes), see `formatParseErrorPretty`.
+/// underline, hint), see `formatParseErrorPretty`.
 ///
 /// The returned string is allocated via `allocator` — caller owns
 /// and must `free` it.
@@ -210,18 +186,14 @@ pub fn formatParseError(allocator: std.mem.Allocator, err: ParseError) ![]u8 {
 }
 
 /// Format a `ParseError` as a multi-line diagnostic with line/col,
-/// source-snippet, caret underline, and optional hint and notes.
+/// source-snippet, caret underline, and an optional hint.
 /// Renders something like:
 /// ```text
 /// ParseError [function call > argument list] @ line 3, col 12 -> str: expected literal
 ///   |
 /// 3 | const x = "missing
-///   |            ^^^^^^^ expected "hello", got "missing
+///   |            ^^^^^^^ expected 'hello', got 'missing
 ///   = hint: did you mean to close the string?
-///   note: definition was here
-///     |
-///   1 | const hello = "hello";
-///     |               ^^^^^^^
 /// ```
 ///
 /// The returned string is allocated via `allocator` — caller owns
@@ -242,19 +214,6 @@ pub fn formatParseErrorPretty(
         const gutter = digitWidth(lc.line);
         try writeSpaces(&buf, allocator, gutter);
         try buf.print(allocator, " = hint: {s}\n", .{h});
-    }
-
-    for (err.notes) |note| {
-        try buf.print(allocator, "  note: {s}\n", .{note.message});
-        if (note.index) |ni| {
-            const note_lc = linecol(input, ni);
-            try writeSnippet(&buf, allocator, input, ni, note_lc, null, null);
-        }
-        if (note.hint) |nh| {
-            const gutter = if (note.index) |ni| digitWidth(linecol(input, ni).line) else 1;
-            try writeSpaces(&buf, allocator, gutter);
-            try buf.print(allocator, " = hint: {s}\n", .{nh});
-        }
     }
 
     return try buf.toOwnedSlice(allocator);
@@ -455,8 +414,7 @@ pub const ParseState = struct {
 /// Wraps the result of `Parser(T).runArena` together with the arena
 /// that owns every slice in it. Caller MUST call `.deinit()` exactly
 /// once — that frees the arena and every parser-allocated slice in
-/// the result (including any `context` / `notes` slices on a
-/// `ParseError`).
+/// the result (including any `context` slice on a `ParseError`).
 pub fn ArenaResult(comptime T: type) type {
     return struct {
         arena: *std.heap.ArenaAllocator,
@@ -501,8 +459,8 @@ pub fn Parser(comptime T: type) type {
         /// Run the parser against a fresh input string. Builds a
         /// `ParseState` from `input` + the caller-supplied
         /// `allocator` and returns the result envelope. Slices that
-        /// the parser produces (including in `ParseError.context` /
-        /// `notes`) are allocated via `allocator` — caller owns them.
+        /// the parser produces (including in `ParseError.context`)
+        /// are allocated via `allocator` — caller owns them.
         pub fn run(self: Self, input: []const u8, allocator: std.mem.Allocator) ParseResult(T) {
             var state = ParseState.init(input, allocator);
             return self.parse(&state);
