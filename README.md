@@ -118,6 +118,13 @@ Requires Zig **0.16.0** or later.
 | `whitespace()` | `Parser([]const u8)` | Match zero-or-more whitespace bytes (` `, `\t`, `\n`, `\r`); always succeeds, returns the borrowed byte slice (possibly empty). |
 | `whitespace1()` | `Parser([]const u8)` | Match one-or-more whitespace bytes; fails with `.incomplete` on EOF, `.syntactic` on a non-whitespace cursor. |
 
+### Sequencing combinators
+
+| Symbol | Type | Description |
+|--------|------|-------------|
+| `sequenceOf(parsers)` | `Parser(TupleResult(@TypeOf(parsers)))` | Run a comptime tuple of parsers in order; collect success values into a heterogeneous tuple. Cursor stops at the failing parser on error. |
+| `TupleResult(ParsersType)` | `type` | Result-tuple type function for `sequenceOf` — `struct { Parser(T0), …, Parser(Tn) }` → `struct { T0, …, Tn }`. |
+
 ### Error-context wrappers
 
 | Symbol | Type | Description |

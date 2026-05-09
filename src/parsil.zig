@@ -65,3 +65,12 @@ pub const whitespace = @import("parsers/whitespace/whitespace.zig").whitespace;
 /// `.syntactic` on a non-whitespace cursor. See
 /// `parsers/whitespace/whitespace1.zig`.
 pub const whitespace1 = @import("parsers/whitespace/whitespace1.zig").whitespace1;
+
+/// Run a heterogeneous tuple of parsers in order; collect their
+/// success values into a tuple of matching types. See
+/// `parsers/sequence-of/sequence-of.zig`.
+pub const sequenceOf = @import("parsers/sequence-of/sequence-of.zig").sequenceOf;
+
+/// Result-tuple type function for `sequenceOf`. Public so consumers
+/// can spell out the result type explicitly.
+pub const TupleResult = @import("parsers/sequence-of/sequence-of.zig").TupleResult;
