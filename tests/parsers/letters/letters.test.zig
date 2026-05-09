@@ -77,3 +77,15 @@ test "letters: stops at digits (boundary between letter and digit runs)" {
     try std.testing.expectEqualStrings("abc", r.ok.value);
     try std.testing.expectEqual(@as(usize, 3), r.ok.index);
 }
+
+test "letters: composes with .map() — Parser([]const u8) → Parser(usize)" {
+    const Build = struct {
+        fn len(s: []const u8) usize {
+            return s.len;
+        }
+    };
+    const p = comptime P.letters().map(usize, Build.len);
+    const r = p.run("Hello123", a);
+    try std.testing.expect(r == .ok);
+    try std.testing.expectEqual(@as(usize, 5), r.ok.value);
+}

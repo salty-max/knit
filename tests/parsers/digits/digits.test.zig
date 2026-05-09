@@ -61,3 +61,15 @@ test "digits: stops at an invalid UTF-8 byte without inspecting it" {
     try std.testing.expectEqualStrings("12", r.ok.value);
     try std.testing.expectEqual(@as(usize, 2), r.ok.index);
 }
+
+test "digits: composes with .map() — Parser([]const u8) → Parser(usize)" {
+    const Build = struct {
+        fn len(s: []const u8) usize {
+            return s.len;
+        }
+    };
+    const p = comptime P.digits().map(usize, Build.len);
+    const r = p.run("12345abc", a);
+    try std.testing.expect(r == .ok);
+    try std.testing.expectEqual(@as(usize, 5), r.ok.value);
+}

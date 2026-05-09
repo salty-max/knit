@@ -51,3 +51,18 @@ test "letter: empty input is incomplete (EOF)" {
     try std.testing.expectEqualStrings("letter", r.err.parser);
     try std.testing.expectEqual(P.core.ParseErrorKind.incomplete, r.err.kind);
 }
+
+test "letter: composes with .map() — Parser(u21) → Parser(bool)" {
+    const Build = struct {
+        fn isUpper(cp: u21) bool {
+            return cp >= 'A' and cp <= 'Z';
+        }
+    };
+    const p = comptime P.letter().map(bool, Build.isUpper);
+    const r1 = p.run("A", a);
+    try std.testing.expect(r1 == .ok);
+    try std.testing.expectEqual(true, r1.ok.value);
+    const r2 = p.run("a", a);
+    try std.testing.expect(r2 == .ok);
+    try std.testing.expectEqual(false, r2.ok.value);
+}

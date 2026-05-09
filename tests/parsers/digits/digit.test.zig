@@ -43,3 +43,15 @@ test "digit: empty input is incomplete (EOF)" {
     try std.testing.expectEqualStrings("digit", r.err.parser);
     try std.testing.expectEqual(P.core.ParseErrorKind.incomplete, r.err.kind);
 }
+
+test "digit: composes with .map() — Parser(u21) → Parser(u8)" {
+    const Build = struct {
+        fn toValue(cp: u21) u8 {
+            return @intCast(cp - '0');
+        }
+    };
+    const p = comptime P.digit().map(u8, Build.toValue);
+    const r = p.run("7x", a);
+    try std.testing.expect(r == .ok);
+    try std.testing.expectEqual(@as(u8, 7), r.ok.value);
+}
