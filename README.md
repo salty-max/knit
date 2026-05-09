@@ -168,6 +168,16 @@ Requires Zig **0.16.0** or later.
 | `tok(p)` | `Parser(T)` | Run `p`, then consume trailing whitespace. Returns `p`'s value with `.Output` preserved. |
 | `keyword(s)` | `Parser([]const u8)` | Match exact literal `s` followed by a non-identifier byte (or EOF), then consume trailing whitespace. Identifier-continuation chars are `[a-zA-Z0-9_]`. Compile-time error on empty `s`. |
 
+### Util / debugging
+
+| Symbol | Type | Description |
+|--------|------|-------------|
+| `tap(p, fn)` | `Parser(T)` | Run `p`, call `fn(*const ParseState)` for side-effects, return `p`'s result. Instrumentation seam. |
+| `debugLog(p, label)` | `Parser(T)` | Run `p`, print one-line trace to stderr prefixed with `label`. Allowlisted use of `std.debug.print`. |
+| `expect(p, msg)` | `Parser(T)` | On err, replace `err.message` with `msg` (other fields unchanged). |
+| `tag(p, name)` | `Parser(T)` | On err, replace `err.parser` with `name`. Inferred-type complement to `label`. |
+| `apply(parsers, U, fn)` | `Parser(U)` | Sugar for `sequenceOf(parsers).map(U, fn)` — runs the comptime parser tuple, applies `fn` to the result tuple. |
+
 ### Lang primitives
 
 | Symbol | Type | Description |

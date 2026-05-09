@@ -202,3 +202,26 @@ pub const signed = @import("parsers/lang/signed.zig").signed;
 /// returns the decoded slice (allocated). See
 /// `parsers/lang/string-lit.zig`.
 pub const stringLit = @import("parsers/lang/string-lit.zig").stringLit;
+
+/// Run `p`, call `fn_tap(state)` for side-effects, return `p`'s
+/// result unchanged. The instrumentation seam. See
+/// `parsers/util/tap.zig`.
+pub const tap = @import("parsers/util/tap.zig").tap;
+
+/// Run `p` and print a one-line trace of the result to stderr
+/// prefixed with `label`. See `parsers/util/debug-log.zig`.
+pub const debugLog = @import("parsers/util/debug-log.zig").debugLog;
+
+/// Run `p`; on failure, replace the error's `message` with the
+/// supplied `msg`. See `parsers/util/expect.zig`.
+pub const expect = @import("parsers/util/expect.zig").expect;
+
+/// Run `p`; on failure, replace the error's `parser` identity
+/// with `name`. Inferred-type complement to `label`. See
+/// `parsers/util/tag.zig`.
+pub const tag = @import("parsers/util/tag.zig").tag;
+
+/// Run a comptime tuple of parsers, apply `fn_apply` to the
+/// result tuple. Sugar for `sequenceOf(parsers).map(U, fn_apply)`.
+/// See `parsers/util/apply.zig`.
+pub const apply = @import("parsers/util/apply.zig").apply;
