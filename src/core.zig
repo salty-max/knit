@@ -125,31 +125,12 @@ pub fn parseError(
 }
 
 /// 1-indexed line and column derived from a byte offset into `input`.
-pub const LineCol = struct { line: usize, col: usize };
+/// Re-exported from `util/linecol.zig`.
+pub const LineCol = @import("util/linecol.zig").LineCol;
 
 /// Convert a byte offset into a 1-indexed `(line, col)` pair.
-///
-/// `\n` ends a line. CRLF inputs produce one `line` increment per
-/// `\n` (the `\r` adds a column then the `\n` resets it — acceptable
-/// for diagnostic display). Pre-OS-X classic-Mac `\r`-only line
-/// endings are NOT recognised.
-///
-/// `index` past the end of `input` clamps to the last byte.
-pub fn linecol(input: []const u8, index: usize) LineCol {
-    var line: usize = 1;
-    var col: usize = 1;
-    var i: usize = 0;
-    const upto = if (index > input.len) input.len else index;
-    while (i < upto) : (i += 1) {
-        if (input[i] == '\n') {
-            line += 1;
-            col = 1;
-        } else {
-            col += 1;
-        }
-    }
-    return .{ .line = line, .col = col };
-}
+/// Re-exported from `util/linecol.zig`.
+pub const linecol = @import("util/linecol.zig").linecol;
 
 /// Errors that can arise from `decodeNext`. Char parsers map these
 /// onto `ParseError` shapes with appropriate `kind` (incomplete /

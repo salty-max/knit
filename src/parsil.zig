@@ -160,3 +160,14 @@ pub const recoverAt = @import("parsers/recover/recover-at.zig").recoverAt;
 /// via a lazy thunk — breaks construction-time cycles for
 /// recursive grammars. See `parsers/recursive/recursive.zig`.
 pub const recursive = @import("parsers/recursive/recursive.zig").recursive;
+
+/// 1-indexed `(line, col)` byte-offset → position helper for
+/// diagnostic display. Re-exported from `core` (which itself
+/// re-exports from `util/linecol.zig`) — Zig 0.16 forbids the
+/// same file from belonging to two modules, so we hop through
+/// `core`'s already-imported reference.
+pub const linecol = @import("core").linecol;
+
+/// 1-indexed line+col pair returned by `linecol`. Re-exported
+/// from `core` for the same module-membership reason.
+pub const LineCol = @import("core").LineCol;
