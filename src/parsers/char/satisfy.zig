@@ -21,7 +21,7 @@ pub fn satisfy(comptime predicate: fn (u21) bool, comptime name: []const u8) cor
             const decoded = core.decodeNext(state) catch |err| return internal.decodeErrorToParseError(err, state.index, name, null);
             if (!predicate(decoded.cp)) {
                 return .{ .err = core.parseError(name, state.index, "predicate did not match", .{
-                    .actual = core.encodeCpAlloc(state.allocator, decoded.cp),
+                    .actual = state.input[state.index..][0..decoded.width],
                     .kind = .syntactic,
                 }) };
             }

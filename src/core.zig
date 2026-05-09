@@ -177,20 +177,6 @@ pub fn decodeNext(state: *const ParseState) Utf8DecodeError!Utf8DecodeResult {
     return .{ .cp = cp, .width = width };
 }
 
-/// Encode a runtime codepoint as UTF-8 bytes owned by `allocator`.
-/// Returns null on alloc failure or invalid codepoint. Char-family
-/// parsers use this for the `actual` field of `ParseError` so the
-/// pretty formatter can show "got 'X'" with the real character.
-/// Arena lifetime cleans up the bytes alongside everything else.
-pub fn encodeCpAlloc(allocator: std.mem.Allocator, cp: u21) ?[]const u8 {
-    const buf = allocator.alloc(u8, 4) catch return null;
-    const len = std.unicode.utf8Encode(cp, buf) catch {
-        allocator.free(buf);
-        return null;
-    };
-    return buf[0..len];
-}
-
 /// Format a `ParseError` into the conventional one-line display
 /// `ParseError [outer > inner] @ index N -> <parser>: <message>`.
 /// The context bracket is omitted when there is no context.

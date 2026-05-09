@@ -19,7 +19,7 @@ pub fn noneOf(comptime set: []const u21) core.Parser(u21) {
                 if (decoded.cp == c) {
                     return .{ .err = core.parseError("noneOf", state.index, "codepoint in forbidden set", .{
                         .expected = expected_str,
-                        .actual = core.encodeCpAlloc(state.allocator, decoded.cp),
+                        .actual = state.input[state.index..][0..decoded.width],
                         .kind = .syntactic,
                     }) };
                 }
