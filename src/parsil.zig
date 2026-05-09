@@ -225,3 +225,60 @@ pub const tag = @import("parsers/util/tag.zig").tag;
 /// result tuple. Sugar for `sequenceOf(parsers).map(U, fn_apply)`.
 /// See `parsers/util/apply.zig`.
 pub const apply = @import("parsers/util/apply.zig").apply;
+
+/// Fixed-width binary numeric primitives — `u8 / i8 / u16le /
+/// u16be / ... / f64be`. Namespaced under `binary.` so the
+/// parsers don't shadow Zig's primitive type names at the
+/// `parsil.` top level. See `parsers/binary/`.
+pub const binary = struct {
+    const byte = @import("parsers/binary/byte.zig");
+    const int16 = @import("parsers/binary/int16.zig");
+    const int32 = @import("parsers/binary/int32.zig");
+    const int64 = @import("parsers/binary/int64.zig");
+    const float = @import("parsers/binary/float.zig");
+
+    /// Byte-order tag (`.little` or `.big`) re-exported for callers that
+    /// want to spell endianness out without importing `std`.
+    pub const Endian = @import("parsers/binary/internal.zig").Endian;
+
+    /// One byte as `u8`. EOF → `.incomplete`.
+    pub const @"u8" = byte.u8;
+    /// One byte as signed `i8`. EOF → `.incomplete`.
+    pub const @"i8" = byte.i8;
+
+    /// Two-byte little-endian `u16`. EOF → `.incomplete`.
+    pub const u16le = int16.u16le;
+    /// Two-byte big-endian `u16`. EOF → `.incomplete`.
+    pub const u16be = int16.u16be;
+    /// Two-byte little-endian signed `i16`. EOF → `.incomplete`.
+    pub const i16le = int16.i16le;
+    /// Two-byte big-endian signed `i16`. EOF → `.incomplete`.
+    pub const i16be = int16.i16be;
+
+    /// Four-byte little-endian `u32`. EOF → `.incomplete`.
+    pub const u32le = int32.u32le;
+    /// Four-byte big-endian `u32`. EOF → `.incomplete`.
+    pub const u32be = int32.u32be;
+    /// Four-byte little-endian signed `i32`. EOF → `.incomplete`.
+    pub const i32le = int32.i32le;
+    /// Four-byte big-endian signed `i32`. EOF → `.incomplete`.
+    pub const i32be = int32.i32be;
+
+    /// Eight-byte little-endian `u64`. EOF → `.incomplete`.
+    pub const u64le = int64.u64le;
+    /// Eight-byte big-endian `u64`. EOF → `.incomplete`.
+    pub const u64be = int64.u64be;
+    /// Eight-byte little-endian signed `i64`. EOF → `.incomplete`.
+    pub const i64le = int64.i64le;
+    /// Eight-byte big-endian signed `i64`. EOF → `.incomplete`.
+    pub const i64be = int64.i64be;
+
+    /// Four-byte little-endian IEEE-754 `f32`. EOF → `.incomplete`.
+    pub const f32le = float.f32le;
+    /// Four-byte big-endian IEEE-754 `f32`. EOF → `.incomplete`.
+    pub const f32be = float.f32be;
+    /// Eight-byte little-endian IEEE-754 `f64`. EOF → `.incomplete`.
+    pub const f64le = float.f64le;
+    /// Eight-byte big-endian IEEE-754 `f64`. EOF → `.incomplete`.
+    pub const f64be = float.f64be;
+};
