@@ -12,9 +12,10 @@ test "oneOf: matches a member of the set" {
 
 test "oneOf: rejects a non-member" {
     const p = comptime P.oneOf(&.{ 'a', 'b', 'c' });
-    const r = p.run("xyz", a);
-    try std.testing.expect(r == .err);
-    try std.testing.expectEqualStrings("oneOf", r.err.parser);
+    var owned = try p.runArena("xyz", a);
+    defer owned.deinit();
+    try std.testing.expect(owned.result == .err);
+    try std.testing.expectEqualStrings("oneOf", owned.result.err.parser);
 }
 
 test "oneOf: works with multi-byte codepoints" {
@@ -23,4 +24,13 @@ test "oneOf: works with multi-byte codepoints" {
     try std.testing.expect(r == .ok);
     try std.testing.expectEqual(@as(u21, '日'), r.ok.value);
     try std.testing.expectEqual(@as(usize, 3), r.ok.index);
+}
+
+test "oneOf: mismatch carries actual + comptime-formatted expected" {
+    const p = comptime P.oneOf(&.{ 'a', 'e', 'i' });
+    var owned = try p.runArena("xyz", a);
+    defer owned.deinit();
+    try std.testing.expect(owned.result == .err);
+    try std.testing.expectEqualStrings("x", owned.result.err.actual.?);
+    try std.testing.expectEqualStrings("one of: 'a', 'e', 'i'", owned.result.err.expected.?);
 }

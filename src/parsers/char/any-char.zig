@@ -11,7 +11,7 @@ const char_mod = @import("char.zig");
 pub fn anyChar() core.Parser(u21) {
     const Thunk = struct {
         fn parse(state: *core.ParseState) core.ParseResult(u21) {
-            const decoded = core.decodeNext(state) catch |err| return char_mod.decodeErrorToParseError(err, state.index);
+            const decoded = core.decodeNext(state) catch |err| return char_mod.decodeErrorToParseError(err, state.index, "anyChar", null);
             state.advance(decoded.width);
             return core.ok(decoded.cp, state.index);
         }

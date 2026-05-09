@@ -37,10 +37,12 @@ test "char: matches 4-byte codepoint" {
 
 test "char: mismatch is syntactic" {
     const p = comptime P.char('a');
-    const r = p.run("xyz", a);
-    try std.testing.expect(r == .err);
-    try std.testing.expectEqualStrings("char", r.err.parser);
-    try std.testing.expectEqual(P.core.ParseErrorKind.syntactic, r.err.kind);
+    // runArena because the mismatch path allocates `actual` via state.allocator.
+    var owned = try p.runArena("xyz", a);
+    defer owned.deinit();
+    try std.testing.expect(owned.result == .err);
+    try std.testing.expectEqualStrings("char", owned.result.err.parser);
+    try std.testing.expectEqual(P.core.ParseErrorKind.syntactic, owned.result.err.kind);
 }
 
 test "char: empty input is incomplete" {
