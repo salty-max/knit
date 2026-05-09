@@ -131,6 +131,7 @@ Requires Zig **0.16.0** or later.
 | Symbol | Type | Description |
 |--------|------|-------------|
 | `choice(T, parsers)` | `Parser(T)` | First-success-wins across a homogeneous slice of `Parser(T)`; full backtrack between attempts; on total failure returns the inner error that reached the furthest cursor (ties: earliest in list). Compile-time error on empty slice. |
+| `possibly(p)` | `Parser(?T)` | Make `p` optional. Success wraps in `?T`; failure rolls back the cursor and returns `ok null`. Always succeeds. |
 
 ### Repetition combinators
 
