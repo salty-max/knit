@@ -151,6 +151,32 @@ pub fn linecol(input: []const u8, index: usize) LineCol {
     return .{ .line = line, .col = col };
 }
 
+/// Errors that can arise from `decodeNext`. Char parsers map these
+/// onto `ParseError` shapes with appropriate `kind` (incomplete /
+/// lexical) and English messages.
+pub const Utf8DecodeError = error{
+    UnexpectedEof,
+    Utf8Invalid,
+    Utf8Truncated,
+};
+
+/// Result of `decodeNext`: the codepoint and the number of bytes it
+/// occupied at the cursor.
+pub const Utf8DecodeResult = struct { cp: u21, width: u3 };
+
+/// Decode the next UTF-8 codepoint at the cursor without advancing
+/// the state. The char-family parsers and any consumer that wants
+/// to peek at the next codepoint use this. Caller advances via
+/// `state.advance(width)` after consuming.
+pub fn decodeNext(state: *const ParseState) Utf8DecodeError!Utf8DecodeResult {
+    const rem = state.remaining();
+    if (rem.len == 0) return error.UnexpectedEof;
+    const width = std.unicode.utf8ByteSequenceLength(rem[0]) catch return error.Utf8Invalid;
+    if (rem.len < width) return error.Utf8Truncated;
+    const cp = std.unicode.utf8Decode(rem[0..width]) catch return error.Utf8Invalid;
+    return .{ .cp = cp, .width = width };
+}
+
 /// Format a `ParseError` into the conventional one-line display
 /// `ParseError [outer > inner] @ index N -> <parser>: <message>`.
 /// The context bracket is omitted when there is no context.
