@@ -8,6 +8,7 @@
 #   - src/parsil.zig             (public barrel; just re-exports)
 #   - src/core.zig               (covered by tests when Phase 1 lands)
 #   - src/util/**/*.zig          (covered by their consumers' tests)
+#   - src/parsers/**/internal.zig (private helpers, covered by sibling parsers)
 #
 # Whole-tree only — a missing mirror is by nature a whole-tree property.
 set -e
@@ -22,6 +23,7 @@ is_exempt() {
     src/parsil.zig|./src/parsil.zig) return 0 ;;
     src/core.zig|./src/core.zig)     return 0 ;;
     src/util/*|./src/util/*)         return 0 ;;
+    src/parsers/*/internal.zig|./src/parsers/*/internal.zig) return 0 ;;
   esac
   return 1
 }
