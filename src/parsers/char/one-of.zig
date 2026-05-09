@@ -23,7 +23,7 @@ pub fn oneOf(comptime set: []const u21) core.Parser(u21) {
             }
             return .{ .err = core.parseError("oneOf", state.index, "codepoint not in set", .{
                 .expected = expected_str,
-                .actual = core.encodeCpAlloc(state.allocator, decoded.cp),
+                .actual = state.input[state.index..][0..decoded.width],
                 .kind = .syntactic,
             }) };
         }

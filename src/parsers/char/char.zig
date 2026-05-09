@@ -6,8 +6,9 @@ const internal = @import("internal.zig");
 /// codepoint's byte width on success.
 ///
 /// On mismatch the error carries `expected = "<encoded c>"` and
-/// `actual = "<encoded next codepoint>"` (the latter allocated via
-/// `state.allocator`, freed by the arena on `runArena`).
+/// `actual` as a borrowed slice of `state.input` covering the
+/// codepoint that was at the cursor (zero allocation; lifetime
+/// is the caller's input).
 ///
 /// Example:
 /// ```zig
@@ -36,7 +37,7 @@ pub fn char(comptime c: u21) core.Parser(u21) {
             if (decoded.cp != c) {
                 return .{ .err = core.parseError("char", state.index, "unexpected codepoint", .{
                     .expected = expected_str,
-                    .actual = core.encodeCpAlloc(state.allocator, decoded.cp),
+                    .actual = state.input[state.index..][0..decoded.width],
                     .kind = .syntactic,
                 }) };
             }
