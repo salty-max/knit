@@ -14,3 +14,11 @@ pub const fail = @import("parsers/fail.zig").fail;
 /// Always succeed with the supplied value, no input consumed. See
 /// `parsers/succeed.zig`.
 pub const succeed = @import("parsers/succeed.zig").succeed;
+
+/// Push a context label onto a parser's failure outer-first. See
+/// `parsers/in-context.zig`.
+pub const inContext = @import("parsers/in-context.zig").inContext;
+
+/// Replace a parser's failure identity with a custom name. See
+/// `parsers/label.zig`.
+pub const label = @import("parsers/label.zig").label;
