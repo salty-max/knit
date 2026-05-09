@@ -88,3 +88,19 @@ pub const many = @import("parsers/many/many.zig").many;
 /// Match a parser one-or-more times; fails if zero matches. See
 /// `parsers/many/many-one.zig`.
 pub const manyOne = @import("parsers/many/many-one.zig").manyOne;
+
+/// Zero-or-more values separated by `sep`; trailing sep is left
+/// in the input. See `parsers/sep-by/sep-by.zig`.
+pub const sepBy = @import("parsers/sep-by/sep-by.zig").sepBy;
+
+/// One-or-more values separated by `sep`; trailing sep is left in
+/// the input. See `parsers/sep-by/sep-by-one.zig`.
+pub const sepByOne = @import("parsers/sep-by/sep-by-one.zig").sepByOne;
+
+/// Zero-or-more values separated by `sep`; trailing sep IS
+/// consumed. See `parsers/sep-by/sep-end-by.zig`.
+pub const sepEndBy = @import("parsers/sep-by/sep-end-by.zig").sepEndBy;
+
+/// One-or-more values separated by `sep`; trailing sep IS
+/// consumed. See `parsers/sep-by/sep-end-by-one.zig`.
+pub const sepEndByOne = @import("parsers/sep-by/sep-end-by-one.zig").sepEndByOne;
