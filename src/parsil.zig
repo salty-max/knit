@@ -109,3 +109,8 @@ pub const sepEndByOne = @import("parsers/sep-by/sep-end-by-one.zig").sepEndByOne
 /// Free-function complement to `Parser(T).between`. See
 /// `parsers/between/between.zig`.
 pub const between = @import("parsers/between/between.zig").between;
+
+/// Make a parser optional — failure becomes `ok` with `null`, no
+/// consumption. Returns `Parser(?T)`. See
+/// `parsers/possibly/possibly.zig`.
+pub const possibly = @import("parsers/possibly/possibly.zig").possibly;

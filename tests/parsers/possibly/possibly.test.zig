@@ -1,0 +1,100 @@
+const std = @import("std");
+const P = @import("parsil");
+
+const a = std.testing.allocator;
+
+test "possibly: inner success — ok with Some(value), cursor advanced" {
+    const p = comptime P.possibly(P.char('-'));
+    const r = p.run("-42", a);
+    try std.testing.expect(r == .ok);
+    try std.testing.expect(r.ok.value != null);
+    try std.testing.expectEqual(@as(u21, '-'), r.ok.value.?);
+    try std.testing.expectEqual(@as(usize, 1), r.ok.index);
+}
+
+test "possibly: inner failure — ok with null, cursor unchanged" {
+    const p = comptime P.possibly(P.char('-'));
+    var owned = try p.runArena("42", a);
+    defer owned.deinit();
+    try std.testing.expect(owned.result == .ok);
+    try std.testing.expect(owned.result.ok.value == null);
+    try std.testing.expectEqual(@as(usize, 0), owned.result.ok.index);
+}
+
+test "possibly: empty input — ok with null" {
+    const p = comptime P.possibly(P.digit());
+    var owned = try p.runArena("", a);
+    defer owned.deinit();
+    try std.testing.expect(owned.result == .ok);
+    try std.testing.expect(owned.result.ok.value == null);
+}
+
+test "possibly: works on slice-returning inner parser" {
+    const p = comptime P.possibly(P.digits());
+    const r = p.run("123abc", a);
+    try std.testing.expect(r == .ok);
+    try std.testing.expect(r.ok.value != null);
+    try std.testing.expectEqualStrings("123", r.ok.value.?);
+    try std.testing.expectEqual(@as(usize, 3), r.ok.index);
+}
+
+test "possibly: rolls back partial inner consumption on failure" {
+    // str("foobar") consumes "foo" before failing at index 3.
+    // possibly must rewind to index 0 so the cursor reads "fooXY"
+    // unchanged for the next parser.
+    const p = comptime P.possibly(P.str("foobar"));
+    var owned = try p.runArena("fooXY", a);
+    defer owned.deinit();
+    try std.testing.expect(owned.result == .ok);
+    try std.testing.expect(owned.result.ok.value == null);
+    try std.testing.expectEqual(@as(usize, 0), owned.result.ok.index);
+}
+
+test "possibly: composes inside sequenceOf for an optional field" {
+    // Optional sign followed by required digits.
+    // runArena: the no-sign branch runs char('-') against '4', which
+    // allocates `actual = '4'` via state.allocator before being
+    // discarded by possibly.
+    const p = comptime P.sequenceOf(.{ P.possibly(P.char('-')), P.digits() });
+    var owned1 = try p.runArena("-42", a);
+    defer owned1.deinit();
+    try std.testing.expect(owned1.result == .ok);
+    try std.testing.expectEqual(@as(u21, '-'), owned1.result.ok.value[0].?);
+    try std.testing.expectEqualStrings("42", owned1.result.ok.value[1]);
+    var owned2 = try p.runArena("42", a);
+    defer owned2.deinit();
+    try std.testing.expect(owned2.result == .ok);
+    try std.testing.expect(owned2.result.ok.value[0] == null);
+    try std.testing.expectEqualStrings("42", owned2.result.ok.value[1]);
+}
+
+test "possibly: composes inside many — collects ?T values" {
+    const p = comptime P.many(P.possibly(P.char('a')));
+    var owned = try p.runArena("aabxyz", a);
+    defer owned.deinit();
+    try std.testing.expect(owned.result == .ok);
+    // Two 'a' matches plus one null break — many stops on no-progress
+    // when possibly returns null without advancing.
+    try std.testing.expect(owned.result.ok.value.len >= 2);
+    try std.testing.expectEqual(@as(u21, 'a'), owned.result.ok.value[0].?);
+    try std.testing.expectEqual(@as(u21, 'a'), owned.result.ok.value[1].?);
+}
+
+test "possibly: composes with .map() to provide a default value" {
+    const Build = struct {
+        fn defaultZero(opt: ?u21) u21 {
+            return opt orelse '0';
+        }
+    };
+    // runArena: the "x" branch makes char('5') fail with an allocated
+    // `actual = 'x'` that possibly discards.
+    const p = comptime P.possibly(P.char('5')).map(u21, Build.defaultZero);
+    var owned1 = try p.runArena("5", a);
+    defer owned1.deinit();
+    try std.testing.expect(owned1.result == .ok);
+    try std.testing.expectEqual(@as(u21, '5'), owned1.result.ok.value);
+    var owned2 = try p.runArena("x", a);
+    defer owned2.deinit();
+    try std.testing.expect(owned2.result == .ok);
+    try std.testing.expectEqual(@as(u21, '0'), owned2.result.ok.value);
+}
