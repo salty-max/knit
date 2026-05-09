@@ -17,11 +17,12 @@ const internal = @import("internal.zig");
 ///
 /// Example:
 /// ```zig
-/// const ds = comptime manyOne(u21, digit());
+/// const ds = comptime manyOne(digit());
 /// // ds.run("123x", a) → ok = .{ .value = .{ '1','2','3' }, .index = 3 }
 /// // ds.run("xyz",  a) → err carrying digit's failure shape
 /// ```
-pub fn manyOne(comptime T: type, comptime p: core.Parser(T)) core.Parser([]T) {
+pub fn manyOne(comptime p: anytype) core.Parser([]@TypeOf(p).Output) {
+    const T = @TypeOf(p).Output;
     const Thunk = struct {
         fn parse(state: *core.ParseState) core.ParseResult([]T) {
             const collected = internal.collectMany(T, p, state) catch {

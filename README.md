@@ -135,8 +135,8 @@ Requires Zig **0.16.0** or later.
 
 | Symbol | Type | Description |
 |--------|------|-------------|
-| `many(T, p)` | `Parser([]T)` | Run `p` zero-or-more times; always succeeds. Stops on inner failure OR on no-progress (inner succeeded without consuming input — guards against infinite loops). |
-| `manyOne(T, p)` | `Parser([]T)` | One-or-more; fails with `p`'s own error if zero matches. |
+| `many(p)` | `Parser([]T)` | Run `p` zero-or-more times; always succeeds. Stops on inner failure OR on no-progress (inner succeeded without consuming input — guards against infinite loops). |
+| `manyOne(p)` | `Parser([]T)` | One-or-more; fails with `p`'s own error if zero matches. |
 | `sepBy(sep, p)` | `Parser([]T)` | Zero-or-more `p` separated by `sep`; trailing `sep` is left in the input. |
 | `sepByOne(sep, p)` | `Parser([]T)` | One-or-more, otherwise like `sepBy`; fails with `p`'s error on zero matches. |
 | `sepEndBy(sep, p)` | `Parser([]T)` | Zero-or-more `p` separated by `sep`; trailing `sep` IS consumed. |

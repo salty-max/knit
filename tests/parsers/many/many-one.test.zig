@@ -4,7 +4,7 @@ const P = @import("parsil");
 const a = std.testing.allocator;
 
 test "manyOne: matches a single element" {
-    const p = comptime P.manyOne(u21, P.char('a'));
+    const p = comptime P.manyOne(P.char('a'));
     var owned = try p.runArena("a", a);
     defer owned.deinit();
     try std.testing.expect(owned.result == .ok);
@@ -13,7 +13,7 @@ test "manyOne: matches a single element" {
 }
 
 test "manyOne: matches a run, stops on first non-match" {
-    const p = comptime P.manyOne(u21, P.char('a'));
+    const p = comptime P.manyOne(P.char('a'));
     var owned = try p.runArena("aaabc", a);
     defer owned.deinit();
     try std.testing.expect(owned.result == .ok);
@@ -22,7 +22,7 @@ test "manyOne: matches a run, stops on first non-match" {
 }
 
 test "manyOne: zero matches at cursor — fails with inner's error" {
-    const p = comptime P.manyOne(u21, P.char('a'));
+    const p = comptime P.manyOne(P.char('a'));
     var owned = try p.runArena("xyz", a);
     defer owned.deinit();
     try std.testing.expect(owned.result == .err);
@@ -31,7 +31,7 @@ test "manyOne: zero matches at cursor — fails with inner's error" {
 }
 
 test "manyOne: empty input — fails with inner's incomplete kind" {
-    const p = comptime P.manyOne(u21, P.char('a'));
+    const p = comptime P.manyOne(P.char('a'));
     var owned = try p.runArena("", a);
     defer owned.deinit();
     try std.testing.expect(owned.result == .err);
@@ -39,7 +39,7 @@ test "manyOne: empty input — fails with inner's incomplete kind" {
 }
 
 test "manyOne: succeed inner — single element, no infinite loop" {
-    const p = comptime P.manyOne(u8, P.succeed(u8, 99));
+    const p = comptime P.manyOne(P.succeed(u8, 99));
     var owned = try p.runArena("anything", a);
     defer owned.deinit();
     try std.testing.expect(owned.result == .ok);
@@ -49,7 +49,7 @@ test "manyOne: succeed inner — single element, no infinite loop" {
 }
 
 test "manyOne: composes inside sequenceOf" {
-    const p = comptime P.sequenceOf(.{ P.manyOne(u21, P.digit()), P.char('!') });
+    const p = comptime P.sequenceOf(.{ P.manyOne(P.digit()), P.char('!') });
     var owned = try p.runArena("42!", a);
     defer owned.deinit();
     try std.testing.expect(owned.result == .ok);
@@ -63,7 +63,7 @@ test "manyOne: composes with .map() to count matches" {
             return s.len;
         }
     };
-    const p = comptime P.manyOne(u21, P.digit()).map(usize, Build.count);
+    const p = comptime P.manyOne(P.digit()).map(usize, Build.count);
     var owned = try p.runArena("12345abc", a);
     defer owned.deinit();
     try std.testing.expect(owned.result == .ok);

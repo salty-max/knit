@@ -18,11 +18,12 @@ const internal = @import("internal.zig");
 ///
 /// Example:
 /// ```zig
-/// const ws = comptime many(u21, char(' '));
+/// const ws = comptime many(char(' '));
 /// // ws.run("   hi", a) → ok = .{ .value = .{ ' ', ' ', ' ' }, .index = 3 }
 /// // ws.run("hi",    a) → ok = .{ .value = .{},                 .index = 0 }
 /// ```
-pub fn many(comptime T: type, comptime p: core.Parser(T)) core.Parser([]T) {
+pub fn many(comptime p: anytype) core.Parser([]@TypeOf(p).Output) {
+    const T = @TypeOf(p).Output;
     const Thunk = struct {
         fn parse(state: *core.ParseState) core.ParseResult([]T) {
             const collected = internal.collectMany(T, p, state) catch {
