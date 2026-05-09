@@ -118,6 +118,18 @@ All slice-producing combinators (`many`, `sepBy`, `sequenceOf`, etc.) and the er
 
 The convenience method `Parser(T).runArena(input)` creates the arena, runs, and returns a wrapper that owns the arena (caller calls `.deinit()`).
 
+### Mixing bit and byte parsers
+
+The `parsers/bit/` family tracks sub-byte position via `ParseState.bit_offset: u3` (0..7). The `parsers/binary/` and char-family parsers don't read this field — they read whole bytes from `state.input[state.index]`.
+
+When mixing the two:
+
+- `state.advance(n)` (used by every byte parser) **always resets `bit_offset` to 0** — a byte advance is byte-aligned by definition. So a byte read after a non-aligned bit read silently discards the partial-byte remainder.
+- To reject the unaligned state explicitly, insert `bit.byteAligned()` between the bit parser and the byte parser. It errs if `bit_offset != 0`.
+- Reading exactly 8, 16, 24, … bits returns naturally to byte-alignment; `byteAligned()` will pass.
+
+Don't read bits across a `binary.uXX()` call without an intervening `byteAligned()` — the byte parser's implicit reset means any leftover bits are lost without a diagnostic.
+
 ## Error Handling
 
 ### Structured `ParseError`
