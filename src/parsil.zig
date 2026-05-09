@@ -128,3 +128,7 @@ pub const peek = @import("parsers/peek/peek.zig").peek;
 /// Assert the cursor is at end-of-input. Returns `Parser(void)`.
 /// See `parsers/end-of-input/end-of-input.zig`.
 pub const endOfInput = @import("parsers/end-of-input/end-of-input.zig").endOfInput;
+
+/// Assert the cursor is at the start of input (index 0). Returns
+/// `Parser(void)`. See `parsers/start-of-input/start-of-input.zig`.
+pub const startOfInput = @import("parsers/start-of-input/start-of-input.zig").startOfInput;
