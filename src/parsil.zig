@@ -155,3 +155,8 @@ pub const everyCharUntil = @import("parsers/everything-until/every-char-until.zi
 /// until any of `anchors` would match, then return `ok null` at
 /// the recovery point. See `parsers/recover/recover-at.zig`.
 pub const recoverAt = @import("parsers/recover/recover-at.zig").recoverAt;
+
+/// Define a parser that references itself (or a parser that does)
+/// via a lazy thunk — breaks construction-time cycles for
+/// recursive grammars. See `parsers/recursive/recursive.zig`.
+pub const recursive = @import("parsers/recursive/recursive.zig").recursive;
