@@ -71,6 +71,8 @@ LICENSE
 
 **Mirror rule**: every `src/parsers/<name>/<file>.zig` has a matching `tests/parsers/<name>/<file>.test.zig`. `scripts/check-mirror.sh` enforces this in CI. Adding a new parser without a matching spec fails CI.
 
+**`internal.zig` is the convention for private helpers** colocated with a parser dir (`src/parsers/<name>/internal.zig`). It is exempt from the mirror rule, must not be re-exported through `src/parsil.zig`, and is exercised through its consuming parsers' tests. Use it when two or more sibling parsers in the same dir share a helper — never reach across `src/parsers/<a>/` ↔ `src/parsers/<b>/` for shared code (extract to `src/util/` instead).
+
 ## Parser Design Principles
 
 ### Small, composable units
