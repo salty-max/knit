@@ -114,3 +114,9 @@ pub const between = @import("parsers/between/between.zig").between;
 /// consumption. Returns `Parser(?T)`. See
 /// `parsers/possibly/possibly.zig`.
 pub const possibly = @import("parsers/possibly/possibly.zig").possibly;
+
+/// Run a parser without committing — non-consuming success, err
+/// passes through with the cursor restored. Free-function
+/// complement to `Parser(T).lookAhead`. See
+/// `parsers/look-ahead/look-ahead.zig`.
+pub const lookAhead = @import("parsers/look-ahead/look-ahead.zig").lookAhead;
