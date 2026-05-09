@@ -1,4 +1,4 @@
-const core = @import("../core.zig");
+const core = @import("core");
 
 /// A parser that always fails with the supplied `ParseError`.
 ///

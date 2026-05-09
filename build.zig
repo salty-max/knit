@@ -6,12 +6,27 @@ pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{});
 
     // ----- Library module + artifact ---------------------------------------
+    //
+    // `core` exposed as its own named module so nested-layout parsers
+    // (e.g. parsers/many/many-one.zig in Phase 2) can `@import("core")`
+    // instead of a deep relative path that check-imports.sh forbids.
+    // Every file inside parsil_mod must use `@import("core")`
+    // consistently — file-imports of core.zig from a different depth
+    // would yield distinct types that don't unify across module
+    // boundaries.
+
+    const core_mod = b.addModule("core", .{
+        .root_source_file = b.path("src/core.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
 
     const parsil_mod = b.addModule("parsil", .{
         .root_source_file = b.path("src/parsil.zig"),
         .target = target,
         .optimize = optimize,
     });
+    parsil_mod.addImport("core", core_mod);
 
     const lib = b.addLibrary(.{
         .name = "parsil",

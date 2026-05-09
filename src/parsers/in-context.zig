@@ -1,5 +1,5 @@
 const std = @import("std");
-const core = @import("../core.zig");
+const core = @import("core");
 
 /// Wrap `p` so its failures carry an extra context label, prepended
 /// to `err.context` outer-first.

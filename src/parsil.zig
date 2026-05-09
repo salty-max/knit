@@ -1,7 +1,7 @@
 /// Public API barrel. Consumers import this module via
 /// `@import("parsil")` and use its re-exports — no deep paths into
 /// `core` or `parsers/*` are part of the supported surface.
-pub const core = @import("core.zig");
+pub const core = @import("core");
 
 /// Match a literal string. See `parsers/str/str.zig` for the
 /// behaviour spec and error shapes.

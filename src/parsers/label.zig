@@ -1,4 +1,4 @@
-const core = @import("../core.zig");
+const core = @import("core");
 
 /// Wrap `p` so its failures carry `name` as the `parser` identity,
 /// **replacing** the inner parser's name. The other fields (`message`,
