@@ -104,6 +104,13 @@ Requires Zig **0.16.0** or later.
 | `digit()` | `Parser(u21)` | Match a single ASCII decimal digit (`'0'..'9'`). |
 | `digits()` | `Parser([]const u8)` | Match one-or-more ASCII decimal digits, returning the borrowed byte slice. |
 
+### Letter primitives
+
+| Symbol | Type | Description |
+|--------|------|-------------|
+| `letter()` | `Parser(u21)` | Match a single ASCII letter (`a-z` or `A-Z`). |
+| `letters()` | `Parser([]const u8)` | Match one-or-more ASCII letters, returning the borrowed byte slice. |
+
 ### Error-context wrappers
 
 | Symbol | Type | Description |
