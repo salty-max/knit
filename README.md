@@ -127,6 +127,8 @@ Requires Zig **0.16.0** or later.
 | `between(left, p, right)` | `Parser(T)` | Run `left`, `p`, `right`; keep only `p`'s value. Free-function complement to `Parser(T).between`. |
 | `lookAhead(p)` | `Parser(T)` | Run `p` non-consuming; success keeps the value but restores the cursor; failure passes through with cursor also restored. Free-function complement to `Parser(T).lookAhead`. |
 | `chain(p, U, fn)` | `Parser(U)` | Sequence with value dependency: run `p`, pass its value to `fn` to produce the next parser, then run that. Free-function complement to `Parser(T).chain`. |
+| `everythingUntil(stopP)` | `Parser([]const u8)` | Consume bytes until `stopP` would succeed; return the borrowed slice. Cursor lands at the start of `stopP`'s match — `stopP` itself isn't consumed. EOF without match → err. |
+| `everyCharUntil(stopP)` | `Parser([]const u8)` | Codepoint-aware `everythingUntil` — advances by UTF-8 codepoint width per iteration. Invalid / truncated UTF-8 → err. |
 | `peek()` | `Parser(u8)` | Return the byte at the cursor without advancing. Byte-level (no UTF-8 decode). EOF → `.incomplete`. |
 | `endOfInput()` | `Parser(void)` | Assert the cursor is at end-of-input. Err carries `actual` borrowed from the leftover prefix (capped at 16 bytes). |
 | `startOfInput()` | `Parser(void)` | Assert the cursor is at the start of input (index 0). Symmetric to `endOfInput`. |
