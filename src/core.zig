@@ -393,6 +393,30 @@ pub fn ParseResult(comptime T: type) type {
     };
 }
 
+/// Build a successful `ParseResult(T)` from a value and the cursor
+/// position after consumption. `T` is inferred from `value`.
+///
+/// Example:
+/// ```zig
+/// state.advance(target.len);
+/// return ok(matched_slice, state.index);
+/// ```
+///
+/// Note: parsil-TS exposes a richer set of helpers
+/// (`forward(state)`, `updateState(state, index, value)`,
+/// `updateResult(state, value)`, `updateError(state, error)`) for its
+/// state-transformer model where `ParserState<T, E>` carries the
+/// running result. Parsil-Zig deliberately splits `ParseState`
+/// (cursor + allocator) from `ParseResult(T)` (the value envelope),
+/// so those helpers don't apply — there's no "state with result" to
+/// fork or forward. The minimal `ok` constructor is the only sugar
+/// the new model wants; the failure path stays as
+/// `.{ .err = parseError(...) }` since the explicit struct literal
+/// is already concise.
+pub fn ok(value: anytype, index: usize) ParseResult(@TypeOf(value)) {
+    return .{ .ok = .{ .value = value, .index = index } };
+}
+
 /// Cursor over the input string. Carried by every parser invocation.
 ///
 /// `input` is the full slice; `index` is the byte offset of the next

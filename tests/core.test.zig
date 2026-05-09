@@ -157,6 +157,22 @@ test "formatParseErrorPretty: multi-line input picks the offending line" {
     try std.testing.expectEqualStrings(expected, s);
 }
 
+// --- ok constructor -----------------------------------------------------
+
+test "ok: builds a ParseResult(T) with T inferred from value" {
+    const r = P.core.ok(@as([]const u8, "hello"), 5);
+    try std.testing.expect(r == .ok);
+    try std.testing.expectEqualStrings("hello", r.ok.value);
+    try std.testing.expectEqual(@as(usize, 5), r.ok.index);
+}
+
+test "ok: works for non-string T" {
+    const r = P.core.ok(@as(u32, 42), 4);
+    try std.testing.expect(r == .ok);
+    try std.testing.expectEqual(@as(u32, 42), r.ok.value);
+    try std.testing.expectEqual(@as(usize, 4), r.ok.index);
+}
+
 // --- run / runArena -----------------------------------------------------
 
 test "Parser.run: takes an allocator and forwards it to ParseState" {

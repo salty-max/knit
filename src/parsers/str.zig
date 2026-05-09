@@ -33,7 +33,10 @@ pub fn str(comptime target: []const u8) core.Parser([]const u8) {
                 ) };
             }
 
-            const cand = rem[0..target.len];
+            // Annotate the slice type explicitly so `core.ok(cand, ...)`'s
+            // anytype-inferred T resolves to []const u8 (Zig's bounded
+            // slice expression otherwise produces *const [N]u8).
+            const cand: []const u8 = rem[0..target.len];
             if (!std.mem.eql(u8, cand, target)) {
                 return .{ .err = core.parseError(
                     "str",
@@ -44,7 +47,7 @@ pub fn str(comptime target: []const u8) core.Parser([]const u8) {
             }
 
             state.advance(target.len);
-            return .{ .ok = .{ .value = cand, .index = state.index } };
+            return core.ok(cand, state.index);
         }
     };
 
