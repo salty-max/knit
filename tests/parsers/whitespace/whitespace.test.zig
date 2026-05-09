@@ -58,3 +58,15 @@ test "whitespace: vertical tab is NOT recognised" {
     try std.testing.expectEqualStrings("", r.ok.value);
     try std.testing.expectEqual(@as(usize, 0), r.ok.index);
 }
+
+test "whitespace: composes with .map() — Parser([]const u8) → Parser(usize)" {
+    const Build = struct {
+        fn len(s: []const u8) usize {
+            return s.len;
+        }
+    };
+    const p = comptime P.whitespace().map(usize, Build.len);
+    const r = p.run("   hi", a);
+    try std.testing.expect(r == .ok);
+    try std.testing.expectEqual(@as(usize, 3), r.ok.value);
+}

@@ -50,3 +50,15 @@ test "whitespace1: vertical tab is NOT recognised, fails as syntactic" {
     try std.testing.expect(r == .err);
     try std.testing.expectEqual(P.core.ParseErrorKind.syntactic, r.err.kind);
 }
+
+test "whitespace1: composes with .map() — Parser([]const u8) → Parser(usize)" {
+    const Build = struct {
+        fn len(s: []const u8) usize {
+            return s.len;
+        }
+    };
+    const p = comptime P.whitespace1().map(usize, Build.len);
+    const r = p.run("\t\t\t!", a);
+    try std.testing.expect(r == .ok);
+    try std.testing.expectEqual(@as(usize, 3), r.ok.value);
+}
