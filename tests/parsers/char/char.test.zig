@@ -49,3 +49,23 @@ test "char: empty input is incomplete" {
     try std.testing.expect(r == .err);
     try std.testing.expectEqual(P.core.ParseErrorKind.incomplete, r.err.kind);
 }
+
+test "char: truncated UTF-8 sequence is incomplete (issue #27 EOF mid-codepoint)" {
+    // 0xC3 is the leading byte of a 2-byte sequence (e.g. 'é' = 0xC3 0xA9).
+    // On its own it's a truncated sequence — decodeNext returns
+    // Utf8Truncated which char.zig maps to kind = .incomplete.
+    const p = comptime P.char('é');
+    const truncated = [_]u8{0xC3};
+    const r = p.run(&truncated, a);
+    try std.testing.expect(r == .err);
+    try std.testing.expectEqual(P.core.ParseErrorKind.incomplete, r.err.kind);
+}
+
+test "char: invalid UTF-8 leading byte is lexical" {
+    // 0xFF is never a valid UTF-8 leading byte.
+    const p = comptime P.char('a');
+    const invalid = [_]u8{0xFF};
+    const r = p.run(&invalid, a);
+    try std.testing.expect(r == .err);
+    try std.testing.expectEqual(P.core.ParseErrorKind.lexical, r.err.kind);
+}
