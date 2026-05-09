@@ -141,3 +141,12 @@ pub const exactly = @import("parsers/exactly/exactly.zig").exactly;
 /// the next parser, then run that. Free-function complement to
 /// `Parser(T).chain`. See `parsers/chain/chain.zig`.
 pub const chain = @import("parsers/chain/chain.zig").chain;
+
+/// Consume bytes until `stopP` would succeed; return the
+/// borrowed slice. See `parsers/everything-until/everything-until.zig`.
+pub const everythingUntil = @import("parsers/everything-until/everything-until.zig").everythingUntil;
+
+/// Codepoint-aware variant of `everythingUntil` — advances by full
+/// UTF-8 codepoint width per iteration. See
+/// `parsers/everything-until/every-char-until.zig`.
+pub const everyCharUntil = @import("parsers/everything-until/every-char-until.zig").everyCharUntil;
