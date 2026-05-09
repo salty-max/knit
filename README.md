@@ -168,6 +168,16 @@ Requires Zig **0.16.0** or later.
 | `tok(p)` | `Parser(T)` | Run `p`, then consume trailing whitespace. Returns `p`'s value with `.Output` preserved. |
 | `keyword(s)` | `Parser([]const u8)` | Match exact literal `s` followed by a non-identifier byte (or EOF), then consume trailing whitespace. Identifier-continuation chars are `[a-zA-Z0-9_]`. Compile-time error on empty `s`. |
 
+### Lang primitives
+
+| Symbol | Type | Description |
+|--------|------|-------------|
+| `identifier()` | `Parser([]const u8)` | Letter or `_`, then `[a-zA-Z0-9_]*`; returns the borrowed slice. |
+| `intLit()` | `Parser(i64)` | Unsigned integer literal in decimal / `0x` hex / `0o` octal / `0b` binary. Identifier-byte boundary check. |
+| `floatLit()` | `Parser(f64)` | Unsigned decimal float with optional fraction and/or exponent. Bare integers fall through to `intLit`'s shape. |
+| `signed(p)` | `Parser(T)` | Wrap a signed-numeric inner parser to admit a leading `-` / `+`. Compile-time error on unsigned/non-numeric `T`. |
+| `stringLit()` | `Parser([]const u8)` | Double-quoted string with `\n \t \r \\ \" \xHH` escapes; returns the decoded slice (**allocated** — needs `runArena`). |
+
 ### Diagnostics helpers
 
 | Symbol | Type | Description |

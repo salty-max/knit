@@ -180,3 +180,25 @@ pub const tok = @import("parsers/lexeme/tok.zig").tok;
 /// byte, then consume trailing whitespace. See
 /// `parsers/lexeme/keyword.zig`.
 pub const keyword = @import("parsers/lexeme/keyword.zig").keyword;
+
+/// Match a programming-language identifier (letter/underscore +
+/// `[a-zA-Z0-9_]*`). See `parsers/lang/identifier.zig`.
+pub const identifier = @import("parsers/lang/identifier.zig").identifier;
+
+/// Match an unsigned integer literal in decimal / hex / octal /
+/// binary; returns `i64`. See `parsers/lang/int-lit.zig`.
+pub const intLit = @import("parsers/lang/int-lit.zig").intLit;
+
+/// Match an unsigned decimal float literal (with optional
+/// fraction and exponent); returns `f64`. See
+/// `parsers/lang/float-lit.zig`.
+pub const floatLit = @import("parsers/lang/float-lit.zig").floatLit;
+
+/// Wrap an unsigned numeric parser to admit a leading `-` / `+`
+/// sign and negate on `-`. See `parsers/lang/signed.zig`.
+pub const signed = @import("parsers/lang/signed.zig").signed;
+
+/// Match a double-quoted string literal with C-style escapes;
+/// returns the decoded slice (allocated). See
+/// `parsers/lang/string-lit.zig`.
+pub const stringLit = @import("parsers/lang/string-lit.zig").stringLit;
