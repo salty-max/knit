@@ -79,13 +79,37 @@ Requires Zig **0.16.0** or later.
 <details>
 <summary><b>Parsers (current shipping set)</b></summary>
 
+### Primitive parsers
+
 | Symbol | Type | Description |
 |--------|------|-------------|
-| `str(target: []const u8)` | `Parser([]const u8)` | Match an exact literal at the cursor. |
-| `Parser(T).run(input)` | `ParseResult(T)` | Run a parser against an input string. |
+| `str(target)` | `Parser([]const u8)` | Match an exact literal at the cursor. |
+| `fail(error)` | `Parser(noreturn)` | Always fail with the supplied `ParseError`. |
+| `succeed(T, value)` | `Parser(T)` | Always succeed with the supplied value, no input consumed. |
+
+### Running
+
+| Symbol | Type | Description |
+|--------|------|-------------|
+| `Parser(T).run(input, allocator)` | `ParseResult(T)` | Run a parser against an input string. |
+| `Parser(T).runArena(input, child)` | `!ArenaResult(T)` | Wrap an `ArenaAllocator` lifecycle; caller `.deinit()`s. |
 | `Parser(T).parse(*ParseState)` | `ParseResult(T)` | Run a parser against an existing state (for composition). |
 
-The full Phase 2 set (`char`, `digits`, `letters`, `sequenceOf`, `choice`, `many`, `sepBy`, `between`, `possibly`, `lookAhead`, `peek`, `endOfInput`, `everythingUntil`, `recover`, `recursive`, `lexeme`, `lang`, `binary`, `bit`, …) lands progressively under [milestone v1.0.0](https://github.com/salty-max/parsil-zig/milestone/1).
+### Combinator methods (all `comptime self`)
+
+| Method | Effect |
+|--------|--------|
+| `.map(U, fn)` | Transform success value |
+| `.chain(U, fn)` | Sequence: `fn(T) Parser(U)`, run that next |
+| `.errorMap(fn)` | Replace the error at consumer boundaries |
+| `.skip(other)` | Run self then other, keep self's value |
+| `.then(other)` | Run self then other, keep other's value |
+| `.between(left, right)` | Sugar for `left.then(self).skip(right)` |
+| `.lookahead()` | Non-consuming success |
+| `.withSpan()` | Wrap result with byte offsets |
+| `.spanMap(U, build)` | Build a caller-shaped node from value + span |
+
+The Phase 2 set (`char`, `digits`, `letters`, `sequenceOf`, `choice`, `many`, `sepBy`, `between`, `possibly`, `lookAhead`, `peek`, `endOfInput`, `everythingUntil`, `recover`, `recursive`, `lexeme`, `lang`, `binary`, `bit`, …) lands progressively under [milestone v1.0.0](https://github.com/salty-max/parsil-zig/milestone/1).
 
 </details>
 
