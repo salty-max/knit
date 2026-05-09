@@ -120,3 +120,7 @@ pub const possibly = @import("parsers/possibly/possibly.zig").possibly;
 /// complement to `Parser(T).lookAhead`. See
 /// `parsers/look-ahead/look-ahead.zig`.
 pub const lookAhead = @import("parsers/look-ahead/look-ahead.zig").lookAhead;
+
+/// Return the byte at the cursor without advancing; EOF → err.
+/// See `parsers/peek/peek.zig`.
+pub const peek = @import("parsers/peek/peek.zig").peek;
