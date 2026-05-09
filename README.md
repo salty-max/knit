@@ -124,6 +124,7 @@ Requires Zig **0.16.0** or later.
 |--------|------|-------------|
 | `sequenceOf(parsers)` | `Parser(TupleResult(@TypeOf(parsers)))` | Run a comptime tuple of parsers in order; collect success values into a heterogeneous tuple. Cursor stops at the failing parser on error. |
 | `TupleResult(ParsersType)` | `type` | Result-tuple type function for `sequenceOf` — `struct { Parser(T0), …, Parser(Tn) }` → `struct { T0, …, Tn }`. |
+| `between(left, p, right)` | `Parser(T)` | Run `left`, `p`, `right`; keep only `p`'s value. Free-function complement to `Parser(T).between`. |
 
 ### Alternative combinators
 

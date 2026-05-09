@@ -104,3 +104,8 @@ pub const sepEndBy = @import("parsers/sep-by/sep-end-by.zig").sepEndBy;
 /// One-or-more values separated by `sep`; trailing sep IS
 /// consumed. See `parsers/sep-by/sep-end-by-one.zig`.
 pub const sepEndByOne = @import("parsers/sep-by/sep-end-by-one.zig").sepEndByOne;
+
+/// Run `left`, `p`, `right` in order; keep only `p`'s value.
+/// Free-function complement to `Parser(T).between`. See
+/// `parsers/between/between.zig`.
+pub const between = @import("parsers/between/between.zig").between;
