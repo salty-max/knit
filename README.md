@@ -125,6 +125,7 @@ Requires Zig **0.16.0** or later.
 | `sequenceOf(parsers)` | `Parser(TupleResult(@TypeOf(parsers)))` | Run a comptime tuple of parsers in order; collect success values into a heterogeneous tuple. Cursor stops at the failing parser on error. |
 | `TupleResult(ParsersType)` | `type` | Result-tuple type function for `sequenceOf` — `struct { Parser(T0), …, Parser(Tn) }` → `struct { T0, …, Tn }`. |
 | `between(left, p, right)` | `Parser(T)` | Run `left`, `p`, `right`; keep only `p`'s value. Free-function complement to `Parser(T).between`. |
+| `lookAhead(p)` | `Parser(T)` | Run `p` non-consuming; success keeps the value but restores the cursor; failure passes through with cursor also restored. Free-function complement to `Parser(T).lookAhead`. |
 
 ### Alternative combinators
 
@@ -169,7 +170,7 @@ Requires Zig **0.16.0** or later.
 | `.skip(other)` | Run self then other, keep self's value |
 | `.then(other)` | Run self then other, keep other's value |
 | `.between(left, right)` | Sugar for `left.then(self).skip(right)` |
-| `.lookahead()` | Non-consuming success |
+| `.lookAhead()` | Non-consuming success |
 | `.withSpan()` | Wrap result with byte offsets |
 | `.spanMap(U, build)` | Build a caller-shaped node from value + span |
 
