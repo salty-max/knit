@@ -22,3 +22,21 @@ pub const inContext = @import("parsers/in-context.zig").inContext;
 /// Replace a parser's failure identity with a custom name. See
 /// `parsers/label.zig`.
 pub const label = @import("parsers/label.zig").label;
+
+/// Match a specific UTF-8 codepoint. See `parsers/char/char.zig`.
+pub const char = @import("parsers/char/char.zig").char;
+
+/// Match any single UTF-8 codepoint. See `parsers/char/any-char.zig`.
+pub const anyChar = @import("parsers/char/any-char.zig").anyChar;
+
+/// Match a codepoint that satisfies a predicate. See
+/// `parsers/char/satisfy.zig`.
+pub const satisfy = @import("parsers/char/satisfy.zig").satisfy;
+
+/// Match a codepoint that appears in the supplied set. See
+/// `parsers/char/one-of.zig`.
+pub const oneOf = @import("parsers/char/one-of.zig").oneOf;
+
+/// Match a codepoint that does NOT appear in the supplied set. See
+/// `parsers/char/none-of.zig`.
+pub const noneOf = @import("parsers/char/none-of.zig").noneOf;

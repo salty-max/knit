@@ -87,6 +87,16 @@ Requires Zig **0.16.0** or later.
 | `fail(error)` | `Parser(noreturn)` | Always fail with the supplied `ParseError`. |
 | `succeed(T, value)` | `Parser(T)` | Always succeed with the supplied value, no input consumed. |
 
+### Char primitives (UTF-8 aware)
+
+| Symbol | Type | Description |
+|--------|------|-------------|
+| `char(c)` | `Parser(u21)` | Match exact codepoint, advance by its byte width. |
+| `anyChar()` | `Parser(u21)` | Match any single codepoint. |
+| `satisfy(predicate, name)` | `Parser(u21)` | Match codepoint passing `predicate`; `name` is the parser identity. |
+| `oneOf(set)` | `Parser(u21)` | Match a codepoint in `[]const u21` set. |
+| `noneOf(set)` | `Parser(u21)` | Match a codepoint NOT in the set. |
+
 ### Error-context wrappers
 
 | Symbol | Type | Description |
