@@ -68,3 +68,15 @@ test "endOfInput: zero allocation on err path" {
     try std.testing.expect(r == .err);
     // No defer / no arena needed — actual is borrowed from input.
 }
+
+test "endOfInput: actual is a SLICE of the input, not a copy" {
+    // The "borrowed from input" claim isn't visible from
+    // expectEqualStrings — content matches either way. Pointer
+    // identity is the test that actually proves zero allocation.
+    const p = comptime P.endOfInput();
+    const input = "leftover";
+    const r = p.run(input, a);
+    try std.testing.expect(r == .err);
+    // actual.ptr must point into the original input, not a fresh allocation.
+    try std.testing.expectEqual(@intFromPtr(input.ptr), @intFromPtr(r.err.actual.?.ptr));
+}
