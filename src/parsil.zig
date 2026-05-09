@@ -40,3 +40,10 @@ pub const oneOf = @import("parsers/char/one-of.zig").oneOf;
 /// Match a codepoint that does NOT appear in the supplied set. See
 /// `parsers/char/none-of.zig`.
 pub const noneOf = @import("parsers/char/none-of.zig").noneOf;
+
+/// Match a single ASCII decimal digit. See `parsers/digits/digit.zig`.
+pub const digit = @import("parsers/digits/digit.zig").digit;
+
+/// Match one-or-more ASCII decimal digits, returning the byte slice.
+/// See `parsers/digits/digits.zig`.
+pub const digits = @import("parsers/digits/digits.zig").digits;

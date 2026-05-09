@@ -97,6 +97,13 @@ Requires Zig **0.16.0** or later.
 | `oneOf(set)` | `Parser(u21)` | Match a codepoint in `[]const u21` set. |
 | `noneOf(set)` | `Parser(u21)` | Match a codepoint NOT in the set. |
 
+### Digit primitives
+
+| Symbol | Type | Description |
+|--------|------|-------------|
+| `digit()` | `Parser(u21)` | Match a single ASCII decimal digit (`'0'..'9'`). |
+| `digits()` | `Parser([]const u8)` | Match one-or-more ASCII decimal digits, returning the borrowed byte slice. |
+
 ### Error-context wrappers
 
 | Symbol | Type | Description |
