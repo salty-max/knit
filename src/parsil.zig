@@ -226,6 +226,28 @@ pub const tag = @import("parsers/util/tag.zig").tag;
 /// See `parsers/util/apply.zig`.
 pub const apply = @import("parsers/util/apply.zig").apply;
 
+/// Bit-level numeric primitives — `bit() / bitsBe(n) / bitsLe(n) /
+/// byteAligned()`. Track sub-byte position via the `bit_offset`
+/// field on `ParseState`. Mixing with byte parsers: the byte
+/// `advance(n)` always resets `bit_offset` to 0 (byte-aligned by
+/// definition); insert `byteAligned()` to reject the unaligned
+/// state explicitly. See `parsers/bit/`.
+pub const bit = struct {
+    const single = @import("parsers/bit/bit.zig");
+    const big = @import("parsers/bit/bits-be.zig");
+    const little = @import("parsers/bit/bits-le.zig");
+    const aligned = @import("parsers/bit/byte-aligned.zig");
+
+    /// Read the next single bit (MSB-first within each byte).
+    pub const bit = single.bit;
+    /// Read the next `n` bits as `u64`, big-endian bit order.
+    pub const bitsBe = big.bitsBe;
+    /// Read the next `n` bits as `u64`, little-endian bit order.
+    pub const bitsLe = little.bitsLe;
+    /// Assert the cursor is byte-aligned (`bit_offset == 0`).
+    pub const byteAligned = aligned.byteAligned;
+};
+
 /// Fixed-width binary numeric primitives — `u8 / i8 / u16le /
 /// u16be / ... / f64be`. Namespaced under `binary.` so the
 /// parsers don't shadow Zig's primitive type names at the

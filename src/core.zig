@@ -393,10 +393,20 @@ pub fn ok(value: anytype, index: usize) ParseResult(@TypeOf(value)) {
 /// Convention: caller passes an **arena**, runs the parser, reads
 /// the result, then `arena.deinit()` frees everything in bulk. The
 /// `Parser(T).runArena` convenience wraps that lifecycle.
+///
+/// **Bit-level parsing.** `bit_offset` tracks sub-byte position
+/// (0..7) for the `parsers/bit/` family. Byte parsers ignore it
+/// — calling `advance(n)` resets it to 0, so a byte read after
+/// an unaligned bit read implicitly discards the partial-byte
+/// remainder. To reject the unaligned state explicitly, insert
+/// `byteAligned()` before the byte parser.
 pub const ParseState = struct {
     input: []const u8,
     index: usize = 0,
     allocator: std.mem.Allocator,
+    /// Sub-byte cursor for the `parsers/bit/` family. Always 0
+    /// for grammars that only use byte parsers.
+    bit_offset: u3 = 0,
 
     /// Build a fresh `ParseState` positioned at the start of `input`.
     pub fn init(input: []const u8, allocator: std.mem.Allocator) ParseState {
@@ -409,12 +419,34 @@ pub const ParseState = struct {
         return self.input[self.index..];
     }
 
-    /// Advance the cursor by `n` bytes. Clamps to the end of input
-    /// (overflow-safe), so callers don't have to bounds-check.
+    /// Advance the byte cursor by `n` bytes. Clamps to the end of
+    /// input (overflow-safe), and resets `bit_offset` to 0 — a
+    /// byte advance is byte-aligned by definition. To advance
+    /// bit-by-bit (and update `bit_offset`), use `advanceBits`.
     pub fn advance(self: *ParseState, n: usize) void {
         const rem_len = self.input.len - self.index;
         const step = if (n > rem_len) rem_len else n;
         self.index += step;
+        self.bit_offset = 0;
+    }
+
+    /// Advance the cursor by `n` bits. Crosses byte boundaries
+    /// as needed: bumps `index` and updates `bit_offset` so the
+    /// new cursor points at the (n)th bit past the old one.
+    /// Clamps at end-of-input (does not advance past `input.len`).
+    pub fn advanceBits(self: *ParseState, n: usize) void {
+        // @as: widen u3 → usize for the byte-step math (bit_offset is at most 7).
+        const total_bits = @as(usize, self.bit_offset) + n;
+        const byte_step = total_bits / 8;
+        const new_bit_offset: u3 = @intCast(total_bits % 8);
+        const rem_len = self.input.len - self.index;
+        if (byte_step >= rem_len) {
+            self.index = self.input.len;
+            self.bit_offset = 0;
+        } else {
+            self.index += byte_step;
+            self.bit_offset = new_bit_offset;
+        }
     }
 };
 
