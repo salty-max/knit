@@ -125,6 +125,12 @@ Requires Zig **0.16.0** or later.
 | `sequenceOf(parsers)` | `Parser(TupleResult(@TypeOf(parsers)))` | Run a comptime tuple of parsers in order; collect success values into a heterogeneous tuple. Cursor stops at the failing parser on error. |
 | `TupleResult(ParsersType)` | `type` | Result-tuple type function for `sequenceOf` — `struct { Parser(T0), …, Parser(Tn) }` → `struct { T0, …, Tn }`. |
 
+### Alternative combinators
+
+| Symbol | Type | Description |
+|--------|------|-------------|
+| `choice(T, parsers)` | `Parser(T)` | First-success-wins across a homogeneous slice of `Parser(T)`; full backtrack between attempts; on total failure returns the inner error that reached the furthest cursor (ties: earliest in list). Compile-time error on empty slice. |
+
 ### Error-context wrappers
 
 | Symbol | Type | Description |

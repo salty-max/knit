@@ -74,3 +74,9 @@ pub const sequenceOf = @import("parsers/sequence-of/sequence-of.zig").sequenceOf
 /// Result-tuple type function for `sequenceOf`. Public so consumers
 /// can spell out the result type explicitly.
 pub const TupleResult = @import("parsers/sequence-of/sequence-of.zig").TupleResult;
+
+/// First-success-wins alternative across a homogeneous slice of
+/// parsers, with full backtracking between attempts and
+/// furthest-progress error on total failure. See
+/// `parsers/choice/choice.zig`.
+pub const choice = @import("parsers/choice/choice.zig").choice;
