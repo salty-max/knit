@@ -136,3 +136,8 @@ pub const startOfInput = @import("parsers/start-of-input/start-of-input.zig").st
 /// Match a parser exactly `n` times (comptime `n`). Returns
 /// `Parser([]T)`. See `parsers/exactly/exactly.zig`.
 pub const exactly = @import("parsers/exactly/exactly.zig").exactly;
+
+/// Sequence: run `p`, hand its value to `fn_chain` to produce
+/// the next parser, then run that. Free-function complement to
+/// `Parser(T).chain`. See `parsers/chain/chain.zig`.
+pub const chain = @import("parsers/chain/chain.zig").chain;
