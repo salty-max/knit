@@ -15,6 +15,6 @@ pub fn isWhitespaceByte(b: u8) bool {
 /// the first byte isn't whitespace or the input is exhausted.
 pub fn scanWhitespace(state: *core.ParseState) void {
     while (state.index < state.input.len and isWhitespaceByte(state.input[state.index])) {
-        state.index += 1;
+        state.advance(1);
     }
 }

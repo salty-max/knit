@@ -38,7 +38,7 @@ pub fn letters() core.Parser([]const u8) {
             const start = state.index;
             while (state.index < state.input.len) {
                 if (!isLetterByte(state.input[state.index])) break;
-                state.index += 1;
+                state.advance(1);
             }
             if (state.index == start) {
                 return .{ .err = core.parseError("letters", state.index, "expected one or more ASCII letters", .{

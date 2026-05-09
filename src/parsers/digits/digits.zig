@@ -32,7 +32,7 @@ pub fn digits() core.Parser([]const u8) {
             while (state.index < state.input.len) {
                 const b = state.input[state.index];
                 if (b < '0' or b > '9') break;
-                state.index += 1;
+                state.advance(1);
             }
             if (state.index == start) {
                 return .{ .err = core.parseError("digits", state.index, "expected one or more decimal digits", .{
