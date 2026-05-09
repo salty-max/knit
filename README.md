@@ -111,6 +111,13 @@ Requires Zig **0.16.0** or later.
 | `letter()` | `Parser(u21)` | Match a single ASCII letter (`a-z` or `A-Z`). |
 | `letters()` | `Parser([]const u8)` | Match one-or-more ASCII letters, returning the borrowed byte slice. |
 
+### Whitespace primitives
+
+| Symbol | Type | Description |
+|--------|------|-------------|
+| `whitespace()` | `Parser([]const u8)` | Match zero-or-more whitespace bytes (` `, `\t`, `\n`, `\r`); always succeeds, returns the borrowed byte slice (possibly empty). |
+| `whitespace1()` | `Parser([]const u8)` | Match one-or-more whitespace bytes; fails with `.incomplete` on EOF, `.syntactic` on a non-whitespace cursor. |
+
 ### Error-context wrappers
 
 | Symbol | Type | Description |
