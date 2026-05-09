@@ -171,3 +171,12 @@ pub const linecol = @import("core").linecol;
 /// 1-indexed line+col pair returned by `linecol`. Re-exported
 /// from `core` for the same module-membership reason.
 pub const LineCol = @import("core").LineCol;
+
+/// Token wrapper: run `p`, then consume trailing whitespace.
+/// See `parsers/lexeme/tok.zig`.
+pub const tok = @import("parsers/lexeme/tok.zig").tok;
+
+/// Match an exact keyword literal followed by a non-identifier
+/// byte, then consume trailing whitespace. See
+/// `parsers/lexeme/keyword.zig`.
+pub const keyword = @import("parsers/lexeme/keyword.zig").keyword;

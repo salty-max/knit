@@ -161,6 +161,13 @@ Requires Zig **0.16.0** or later.
 | `inContext(T, label, p)` | `Parser(T)` | Push `label` onto `err.context` outer-first; success transparent. |
 | `label(T, name, p)` | `Parser(T)` | Replace `err.parser` with `name`; other fields unchanged. |
 
+### Lexeme combinators
+
+| Symbol | Type | Description |
+|--------|------|-------------|
+| `tok(p)` | `Parser(T)` | Run `p`, then consume trailing whitespace. Returns `p`'s value with `.Output` preserved. |
+| `keyword(s)` | `Parser([]const u8)` | Match exact literal `s` followed by a non-identifier byte (or EOF), then consume trailing whitespace. Identifier-continuation chars are `[a-zA-Z0-9_]`. Compile-time error on empty `s`. |
+
 ### Diagnostics helpers
 
 | Symbol | Type | Description |
