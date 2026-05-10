@@ -407,6 +407,13 @@ pub const ParseState = struct {
     /// Sub-byte cursor for the `parsers/bit/` family. Always 0
     /// for grammars that only use byte parsers.
     bit_offset: u3 = 0,
+    /// Optional sink for `recoverAt`-style multi-error
+    /// reporting. When non-null, `recoverAt` pushes each
+    /// recovered (originally-fatal) `ParseError` here with
+    /// `severity = .recovered` instead of dropping it. Set by
+    /// `Parser(T).runDiag`; null for the default `.run`
+    /// (single-error) path.
+    recovered_errs: ?*std.ArrayList(ParseError) = null,
 
     /// Build a fresh `ParseState` positioned at the start of `input`.
     pub fn init(input: []const u8, allocator: std.mem.Allocator) ParseState {
@@ -449,6 +456,52 @@ pub const ParseState = struct {
         }
     }
 };
+
+/// Multi-error parse outcome — the analogue of `ParseResult(T)`
+/// for recovery-driven grammars. On success, `recovered` carries
+/// every `ParseError` that `recoverAt` swallowed during the parse
+/// (with `severity = .recovered`); the parser returned a value but
+/// the consumer can still surface partial-failure diagnostics.
+/// On failure, `primary` is the fatal error that ended the parse
+/// and `recovered` is the same accumulated list — useful for IDE
+/// "show all problems" UX.
+///
+/// Returned by `Parser(T).runDiag` (and `runDiagArena`). Single-
+/// error `.run` / `.runArena` ignore the recovery stream entirely.
+pub fn Diagnostic(comptime T: type) type {
+    return union(enum) {
+        ok: struct {
+            value: T,
+            index: usize,
+            recovered: []const ParseError = &.{},
+        },
+        err: struct {
+            primary: ParseError,
+            recovered: []const ParseError = &.{},
+        },
+    };
+}
+
+/// Wraps a `Diagnostic(T)` with the arena that owns its
+/// `recovered` slice (and any allocations the parsers made
+/// inside `primary` / `recovered` entries). Caller MUST call
+/// `.deinit()` exactly once.
+pub fn DiagnosticArenaResult(comptime T: type) type {
+    return struct {
+        arena: *std.heap.ArenaAllocator,
+        diag: Diagnostic(T),
+
+        /// Free the arena and the heap-stored arena handle. After
+        /// this, every slice in `diag` (including `recovered` and
+        /// any allocations inside its `ParseError` entries) is
+        /// dangling.
+        pub fn deinit(self: @This()) void {
+            const child = self.arena.child_allocator;
+            self.arena.deinit();
+            child.destroy(self.arena);
+        }
+    };
+}
 
 /// Wraps the result of `Parser(T).runArena` together with the arena
 /// that owns every slice in it. Caller MUST call `.deinit()` exactly
@@ -547,6 +600,40 @@ pub fn Parser(comptime T: type) type {
             const arena = try child.create(std.heap.ArenaAllocator);
             arena.* = std.heap.ArenaAllocator.init(child);
             return .{ .arena = arena, .result = self.run(input, arena.allocator()) };
+        }
+
+        /// Multi-error variant of `.run`. Builds a `ParseState`
+        /// with a `recovered_errs` sink attached, runs the parser,
+        /// and returns a `Diagnostic(T)` carrying both the value
+        /// (or fatal err) and every `ParseError` that `recoverAt`
+        /// swallowed during the parse.
+        ///
+        /// The `recovered` slice is allocated via `allocator` —
+        /// caller owns it. For arena cleanup, use `runDiagArena`.
+        pub fn runDiag(self: Self, input: []const u8, allocator: std.mem.Allocator) Diagnostic(T) {
+            var list: std.ArrayList(ParseError) = .empty;
+            var state = ParseState.init(input, allocator);
+            state.recovered_errs = &list;
+            const r = self.parse(&state);
+            const recovered = list.toOwnedSlice(allocator) catch &.{};
+            return switch (r) {
+                .ok => |x| .{ .ok = .{ .value = x.value, .index = x.index, .recovered = recovered } },
+                .err => |e| .{ .err = .{ .primary = e, .recovered = recovered } },
+            };
+        }
+
+        /// Arena-backed variant of `.runDiag`. Caller MUST call
+        /// `.deinit()` on the result exactly once — frees the
+        /// arena (and every slice the parser produced, including
+        /// `recovered`).
+        pub fn runDiagArena(
+            self: Self,
+            input: []const u8,
+            child: std.mem.Allocator,
+        ) std.mem.Allocator.Error!DiagnosticArenaResult(T) {
+            const arena = try child.create(std.heap.ArenaAllocator);
+            arena.* = std.heap.ArenaAllocator.init(child);
+            return .{ .arena = arena, .diag = self.runDiag(input, arena.allocator()) };
         }
 
         // ----- Fluent combinator methods (all comptime-self) ---------------

@@ -118,6 +118,15 @@ All slice-producing combinators (`many`, `sepBy`, `sequenceOf`, etc.) and the er
 
 The convenience method `Parser(T).runArena(input)` creates the arena, runs, and returns a wrapper that owns the arena (caller calls `.deinit()`).
 
+### Multi-error diagnostics
+
+`recoverAt` (#44) silently swallows errors when an anchor matches. For grammars that want to surface every malformed construct (asm, Gero language compilers), use `Parser(T).runDiag(input, allocator)` instead of `.run(...)`. `runDiag` returns `Diagnostic(T)` carrying:
+
+- `.ok = { value, index, recovered: []const ParseError }` — parse succeeded, but `recovered` lists every err that was `recoverAt`-swallowed during the parse (with `severity = .recovered`).
+- `.err = { primary: ParseError, recovered: []const ParseError }` — fatal err ended the parse, and `recovered` carries any recovered errs that happened before it.
+
+The plain `.run` / `.runArena` paths leave the recovery sink unset, so `recoverAt` drops swallowed errs as before — no perf cost for grammars that don't opt in.
+
 ### Mixing bit and byte parsers
 
 The `parsers/bit/` family tracks sub-byte position via `ParseState.bit_offset: u3` (0..7). The `parsers/binary/` and char-family parsers don't read this field — they read whole bytes from `state.input[state.index]`.

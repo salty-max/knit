@@ -328,6 +328,75 @@ test "Parser.runArena: err path — caller deinit still frees the arena" {
     try std.testing.expectEqualStrings("str", owned.result.err.parser);
 }
 
+// --- runDiag (multi-error) -----------------------------------------------
+
+test "runDiag: no recovery — ok with empty recovered list" {
+    const diag = P.str("hello").runDiag("hello", a);
+    defer if (diag == .ok) a.free(diag.ok.recovered) else a.free(diag.err.recovered);
+    try std.testing.expect(diag == .ok);
+    try std.testing.expectEqualStrings("hello", diag.ok.value);
+    try std.testing.expectEqual(@as(usize, 0), diag.ok.recovered.len);
+}
+
+test "runDiag: single recovery via recoverAt — ok with one recovered err" {
+    // p tries "X", fails. Anchor matches ';'. Recovers, value = null.
+    const p = comptime P.recoverAt(P.char('X'), .{P.char(';')});
+    var owned = try p.runDiagArena("a;rest", a);
+    defer owned.deinit();
+    try std.testing.expect(owned.diag == .ok);
+    try std.testing.expect(owned.diag.ok.value == null);
+    try std.testing.expectEqual(@as(usize, 1), owned.diag.ok.recovered.len);
+    try std.testing.expectEqual(P.core.Severity.recovered, owned.diag.ok.recovered[0].severity);
+    try std.testing.expectEqualStrings("char", owned.diag.ok.recovered[0].parser);
+}
+
+test "runDiag: multiple recoveries via repeated recoverAt — count matches" {
+    // Two recoverAts in sequence, both fail and recover. Each pushes
+    // its err to the diagnostic sink.
+    const p = comptime P.sequenceOf(.{
+        P.recoverAt(P.char('X'), .{P.char(';')}),
+        P.char(';'),
+        P.recoverAt(P.char('X'), .{P.char(';')}),
+        P.char(';'),
+    });
+    var owned = try p.runDiagArena("a;b;", a);
+    defer owned.deinit();
+    try std.testing.expect(owned.diag == .ok);
+    try std.testing.expectEqual(@as(usize, 2), owned.diag.ok.recovered.len);
+    // Both recovered errs are from char('X')'s failure.
+    try std.testing.expectEqualStrings("char", owned.diag.ok.recovered[0].parser);
+    try std.testing.expectEqualStrings("char", owned.diag.ok.recovered[1].parser);
+}
+
+test "runDiag: fatal err after recovery — err with primary + recovered populated" {
+    // First recoverAt recovers (anchor matches). Second has no anchor in
+    // remaining input → fatal. Diagnostic carries both: the recovered
+    // err from the first AND the fatal primary from the second.
+    const p = comptime P.sequenceOf(.{
+        P.recoverAt(P.char('X'), .{P.char(';')}),
+        P.char(';'),
+        P.recoverAt(P.char('X'), .{P.char('!')}),
+    });
+    var owned = try p.runDiagArena("a;noanchor", a);
+    defer owned.deinit();
+    try std.testing.expect(owned.diag == .err);
+    try std.testing.expectEqual(@as(usize, 1), owned.diag.err.recovered.len);
+    try std.testing.expectEqual(P.core.Severity.recovered, owned.diag.err.recovered[0].severity);
+    // Primary is from the second recoverAt's no-anchor failure.
+    try std.testing.expectEqualStrings("char", owned.diag.err.primary.parser);
+}
+
+test "runDiag: regular .run still works unchanged (single-error path)" {
+    // Sanity: adding the recovery sink to ParseState shouldn't change
+    // the .run-only path. recoverAt sees null sink and drops the err
+    // exactly like before.
+    const p = comptime P.recoverAt(P.char('X'), .{P.char(';')});
+    var owned = try p.runArena("a;rest", a);
+    defer owned.deinit();
+    try std.testing.expect(owned.result == .ok);
+    try std.testing.expect(owned.result.ok.value == null);
+}
+
 test "formatParseErrorPretty: includes context and hint" {
     const input = "abc";
     const err: P.core.ParseError = .{
