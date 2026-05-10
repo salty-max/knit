@@ -737,9 +737,11 @@ pub fn Parser(comptime T: type) type {
                 fn parse(state: *ParseState) ParseResult(T) {
                     const saved = state.index;
                     const saved_bit_offset = state.bit_offset;
+                    const saved_recovered_len: usize = if (state.recovered_errs) |list| list.items.len else 0;
                     const r = self.parseFn(state);
                     state.index = saved;
                     state.bit_offset = saved_bit_offset;
+                    if (state.recovered_errs) |list| list.shrinkRetainingCapacity(saved_recovered_len);
                     if (r == .err) return .{ .err = r.err };
                     return ok(r.ok.value, saved);
                 }

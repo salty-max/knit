@@ -40,10 +40,12 @@ pub fn choice(comptime T: type, comptime parsers: []const core.Parser(T)) core.P
         fn parse(state: *core.ParseState) core.ParseResult(T) {
             const start = state.index;
             const start_bit_offset = state.bit_offset;
+            const start_recovered_len: usize = if (state.recovered_errs) |list| list.items.len else 0;
             var furthest: ?core.ParseError = null;
             inline for (parsers) |p| {
                 state.index = start;
                 state.bit_offset = start_bit_offset;
+                if (state.recovered_errs) |list| list.shrinkRetainingCapacity(start_recovered_len);
                 const r = p.parseFn(state);
                 switch (r) {
                     .ok => return r,

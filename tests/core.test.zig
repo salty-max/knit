@@ -94,6 +94,18 @@ test "Parser.lookAhead: bit_offset restored on success (regression)" {
     try std.testing.expectEqual(@as(u64, 5), r.ok.value[1]);
 }
 
+test "Parser.lookAhead: recovered errs are rolled back (regression)" {
+    // lookAhead is non-consuming: cursor restored even on inner success.
+    // Same contract should apply to recovered_errs — the peek "didn't really
+    // happen", so any recoverAt-pushed errs from the inner shouldn't survive.
+    const buf = "abc";
+    const peek_with_recovery = comptime P.recoverAt(P.str("X"), .{P.peek()}).lookAhead();
+    var owned = try peek_with_recovery.runDiagArena(buf, a);
+    defer owned.deinit();
+    try std.testing.expect(owned.diag == .ok);
+    try std.testing.expectEqual(@as(usize, 0), owned.diag.ok.recovered.len);
+}
+
 test "Parser.lookAhead: forwards err with cursor restored" {
     const peek = comptime P.str("hi").lookAhead();
     const r = peek.run("bye", a);

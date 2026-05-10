@@ -54,6 +54,21 @@ test "possibly: bit_offset restored when inner fails post-bit-advance (regressio
     try std.testing.expectEqual(@as(u64, 5), r.ok.value[1]);
 }
 
+test "possibly: recovered errs from inner-failure are rolled back (regression)" {
+    // Inner: recoverAt pushes 1 err, then `.skip(str("ZZZ"))` fails.
+    // possibly catches the failure and returns null.
+    // Without the fix: the recovered err survives → diag.recovered.len == 1.
+    // With the fix: the err is discarded along with the inner's effects → 0.
+    const buf = "abc";
+    const inner = comptime P.recoverAt(P.str("X"), .{P.peek()}).skip(P.str("ZZZ"));
+    const opt = comptime P.possibly(inner);
+    var owned = try opt.runDiagArena(buf, a);
+    defer owned.deinit();
+    try std.testing.expect(owned.diag == .ok);
+    try std.testing.expect(owned.diag.ok.value == null);
+    try std.testing.expectEqual(@as(usize, 0), owned.diag.ok.recovered.len);
+}
+
 test "possibly: rolls back partial inner consumption on failure" {
     // str("foobar") consumes "foo" before failing at index 3.
     // possibly must rewind to index 0 so the cursor reads "fooXY"
