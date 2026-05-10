@@ -3,17 +3,11 @@ const core = @import("core");
 /// Run `p`; on failure, replace the error's `parser` (identity)
 /// field with `name`. On success, return unchanged.
 ///
-/// Same effect as the existing `label(T, name, p)` but with
-/// inferred `T` and the canonical `(p, name)` argument order
-/// — matches the harmonized signature shape used by the rest
-/// of the inferred-type API. `label` and `tag` will eventually
-/// converge (one will be removed in a follow-up); for now both
-/// exist.
-///
 /// Use to give a sub-parser a domain-specific identity in
 /// diagnostics: `tag(intLit(), "port-number")` makes errors
 /// show `parser = "port-number"` instead of the generic
-/// `"intLit"`.
+/// `"intLit"`. Pair with `expect(p, msg)` to also override the
+/// error message.
 ///
 /// Example:
 /// ```zig
