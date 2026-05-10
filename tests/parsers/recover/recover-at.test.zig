@@ -98,6 +98,22 @@ test "recoverAt: anchor cursor is at the recovery point, not past the anchor" {
     try std.testing.expectEqual(@as(usize, 2), owned.result.ok.index);
 }
 
+test "recoverAt: bit_offset restored after anchor-scan recovery (regression)" {
+    // Inner fails on str("X") at byte 0. Anchor (peek) matches.
+    // recoverAt's scan loop saves/restores bit_offset around each anchor
+    // attempt — without the fix, a subsequent bit read would see corrupted
+    // bit_offset state.
+    //
+    // Setup: subsequent bitsBe(3) must read bits 0-2 = 5 from 0xA0.
+    const buf = [_]u8{0xA0};
+    const recovered = comptime P.recoverAt(P.str("X"), .{P.peek()});
+    const seq = comptime P.sequenceOf(.{ recovered, P.bit.bitsBe(3) });
+    const r = seq.run(&buf, a);
+    try std.testing.expect(r == .ok);
+    try std.testing.expect(r.ok.value[0] == null);
+    try std.testing.expectEqual(@as(u64, 5), r.ok.value[1]);
+}
+
 test "recoverAt: rolls back partial anchor consumption between scan positions" {
     // Anchor = str("END") tried at each scan position. On "ENXENDxyz":
     // pos 0: str("END") matches 'E', 'N', then fails on 'X' (str leaves

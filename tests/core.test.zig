@@ -82,6 +82,18 @@ test "Parser.lookAhead: succeeds without consuming" {
     try std.testing.expectEqual(@as(usize, 0), r.ok.index);
 }
 
+test "Parser.lookAhead: bit_offset restored on success (regression)" {
+    // Peek 3 bits, then read those same bits again. Without bit_offset
+    // restore, the second read would advance from bit_offset=3 instead of 0.
+    const buf = [_]u8{0xA0}; // 10100000 — bits 0-2 = 0b101 = 5
+    const peek3 = comptime P.bit.bitsBe(3).lookAhead();
+    const seq = comptime P.sequenceOf(.{ peek3, P.bit.bitsBe(3) });
+    const r = seq.run(&buf, a);
+    try std.testing.expect(r == .ok);
+    try std.testing.expectEqual(@as(u64, 5), r.ok.value[0]);
+    try std.testing.expectEqual(@as(u64, 5), r.ok.value[1]);
+}
+
 test "Parser.lookAhead: forwards err with cursor restored" {
     const peek = comptime P.str("hi").lookAhead();
     const r = peek.run("bye", a);

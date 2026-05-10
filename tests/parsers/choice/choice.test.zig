@@ -113,6 +113,22 @@ test "choice: composes with .map() to project the alternative" {
     try std.testing.expectEqual(false, owned2.result.ok.value);
 }
 
+test "choice: bit_offset restored across alternatives (regression)" {
+    // Alt 1 reads 3 bits then `.skip(str("X"))` fails (byte 0 isn't 'X').
+    // bit_offset is 3 after alt 1's bitsBe advances it; choice must
+    // restore it before alt 2 runs.
+    //
+    // Without the fix: alt 2 would read bits 3-5 = 0b000 = 0 from 0xA0
+    // (10100000) instead of bits 0-2 = 0b101 = 5.
+    const buf = [_]u8{0xA0};
+    const alt1 = comptime P.bit.bitsBe(3).skip(P.str("X"));
+    const alt2 = comptime P.bit.bitsBe(3);
+    const p = comptime P.choice(u64, &.{ alt1, alt2 });
+    const r = p.run(&buf, a);
+    try std.testing.expect(r == .ok);
+    try std.testing.expectEqual(@as(u64, 5), r.ok.value);
+}
+
 test "choice: empty parsers slice triggers a compile error" {
     // Hand-test: uncomment to see the @compileError message.
     // const _ = comptime P.choice([]const u8, &.{});
