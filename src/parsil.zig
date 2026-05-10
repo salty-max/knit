@@ -37,6 +37,10 @@ pub const oneOf = @import("parsers/char/one-of.zig").oneOf;
 /// `parsers/char/none-of.zig`.
 pub const noneOf = @import("parsers/char/none-of.zig").noneOf;
 
+/// Match any byte that does NOT start a successful parse of `p`.
+/// See `parsers/char/any-char-except.zig`.
+pub const anyCharExcept = @import("parsers/char/any-char-except.zig").anyCharExcept;
+
 /// Match a single ASCII decimal digit. See `parsers/digits/digit.zig`.
 pub const digit = @import("parsers/digits/digit.zig").digit;
 
@@ -44,12 +48,32 @@ pub const digit = @import("parsers/digits/digit.zig").digit;
 /// See `parsers/digits/digits.zig`.
 pub const digits = @import("parsers/digits/digits.zig").digits;
 
+/// Match a single ASCII hex digit (`[0-9a-fA-F]`). See
+/// `parsers/digits/hex-digit.zig`.
+pub const hexDigit = @import("parsers/digits/hex-digit.zig").hexDigit;
+
+/// Match a single ASCII octal digit (`[0-7]`). See
+/// `parsers/digits/oct-digit.zig`.
+pub const octDigit = @import("parsers/digits/oct-digit.zig").octDigit;
+
 /// Match a single ASCII letter (a-z, A-Z). See `parsers/letters/letter.zig`.
 pub const letter = @import("parsers/letters/letter.zig").letter;
 
 /// Match one-or-more ASCII letters, returning the byte slice. See
 /// `parsers/letters/letters.zig`.
 pub const letters = @import("parsers/letters/letters.zig").letters;
+
+/// Match a single ASCII alphanumeric (`[a-zA-Z0-9]`). See
+/// `parsers/letters/alpha-num.zig`.
+pub const alphaNum = @import("parsers/letters/alpha-num.zig").alphaNum;
+
+/// Match a single ASCII uppercase letter (`[A-Z]`). See
+/// `parsers/letters/upper.zig`.
+pub const upper = @import("parsers/letters/upper.zig").upper;
+
+/// Match a single ASCII lowercase letter (`[a-z]`). See
+/// `parsers/letters/lower.zig`.
+pub const lower = @import("parsers/letters/lower.zig").lower;
 
 /// Match zero-or-more ASCII whitespace bytes (space, tab, `\n`,
 /// `\r`), returning the byte slice. Always succeeds. See
@@ -128,6 +152,11 @@ pub const endOfInput = @import("parsers/end-of-input/end-of-input.zig").endOfInp
 /// Assert the cursor is at the start of input (index 0). Returns
 /// `Parser(void)`. See `parsers/start-of-input/start-of-input.zig`.
 pub const startOfInput = @import("parsers/start-of-input/start-of-input.zig").startOfInput;
+
+/// Return the current byte offset (`state.index`) without
+/// consuming. Useful inside `chain` / `apply` to capture
+/// positions. See `parsers/position/index.zig`.
+pub const index = @import("parsers/position/index.zig").index;
 
 /// Match a parser exactly `n` times (comptime `n`). Returns
 /// `Parser([]T)`. See `parsers/exactly/exactly.zig`.
@@ -242,6 +271,14 @@ pub const bit = struct {
     pub const bitsLe = little.bitsLe;
     /// Assert the cursor is byte-aligned (`bit_offset == 0`).
     pub const byteAligned = aligned.byteAligned;
+
+    const zero_mod = @import("parsers/bit/zero.zig");
+    const one_mod = @import("parsers/bit/one.zig");
+
+    /// Assert the next bit is `0`; consume it.
+    pub const zero = zero_mod.zero;
+    /// Assert the next bit is `1`; consume it.
+    pub const one = one_mod.one;
 };
 
 /// Fixed-width binary numeric primitives — `u8 / i8 / u16le /
@@ -299,4 +336,10 @@ pub const binary = struct {
     pub const f64le = float.f64le;
     /// Eight-byte big-endian IEEE-754 `f64`. EOF → `.incomplete`.
     pub const f64be = float.f64be;
+
+    const bytes_mod = @import("parsers/binary/bytes.zig");
+
+    /// Read exactly `n` raw bytes; return as a borrowed slice.
+    /// EOF → `.incomplete`.
+    pub const bytes = bytes_mod.bytes;
 };
