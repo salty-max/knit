@@ -5,7 +5,7 @@
 //! allocator state.
 
 const std = @import("std");
-const P = @import("parsil");
+const P = @import("knit");
 
 /// Assert the parse succeeded. Returns the success payload for follow-up checks.
 pub fn assertOk(comptime T: type, result: P.core.ParseResult(T)) !@TypeOf(result.ok) {

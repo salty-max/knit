@@ -1,5 +1,5 @@
 const std = @import("std");
-const P = @import("parsil");
+const P = @import("knit");
 
 const a = std.testing.allocator;
 
@@ -7,7 +7,7 @@ const a = std.testing.allocator;
 // allocated `actual` byte slices via state.allocator (e.g. char('+')
 // emits "actual = '-'" when it doesn't match). Without an arena
 // owning those allocations, the discarded errors leak — which is
-// canonical parsil behavior, not a bug. Arena-per-parse cleans up
+// canonical knit behavior, not a bug. Arena-per-parse cleans up
 // every alternative's transient allocations in bulk on .deinit().
 
 test "choice: first alternative matches, no fall-through" {

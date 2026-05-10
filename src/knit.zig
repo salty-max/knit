@@ -1,5 +1,5 @@
 /// Public API barrel. Consumers import this module via
-/// `@import("parsil")` and use its re-exports — no deep paths into
+/// `@import("knit")` and use its re-exports — no deep paths into
 /// `core` or `parsers/*` are part of the supported surface.
 pub const core = @import("core");
 
@@ -322,7 +322,7 @@ pub const bit = struct {
 /// Fixed-width binary numeric primitives — `u8 / i8 / u16le /
 /// u16be / ... / f64be`. Namespaced under `binary.` so the
 /// parsers don't shadow Zig's primitive type names at the
-/// `parsil.` top level. See `parsers/binary/`.
+/// `knit.` top level. See `parsers/binary/`.
 pub const binary = struct {
     const byte = @import("parsers/binary/byte.zig");
     const int16 = @import("parsers/binary/int16.zig");

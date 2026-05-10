@@ -1,13 +1,13 @@
-# Parsil
+# knit
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 [![Zig 0.16+](https://img.shields.io/badge/Zig-0.16%2B-f7a41d.svg)](https://ziglang.org/download/)
 
 A tiny, composable parser-combinator toolkit for Zig. Build complex grammars from small primitives (`char`, `digit`, `str`, `intLit`, …) via combinators (`sequenceOf`, `choice`, `many`, `chainl1`, …), with structured errors and opt-in multi-error recovery for grammar-author-friendly diagnostics.
 
-> Originally a TypeScript library — see [parsil on npm](https://www.npmjs.com/package/parsil) for the JavaScript/TypeScript runtime.
+> API design inspired by [parsil (TypeScript, npm)](https://www.npmjs.com/package/parsil) — the original library this is a Zig port of.
 
-## Why parsil
+## Why knit
 
 - **Zero dependencies** — pure Zig, no C, no FFI, no lockfile to chase.
 - **Comptime-monomorphic** — `Parser(T)` is a plain function pointer with no `*anyopaque` and no `anyerror`. Types flow through your grammar all the way to the result.
@@ -45,25 +45,25 @@ A tiny, composable parser-combinator toolkit for Zig. Build complex grammars fro
 ## Quick Start
 
 ```bash
-# Add parsil to your project
-zig fetch --save git+https://github.com/salty-max/parsil-zig
+# Add knit to your project
+zig fetch --save git+https://github.com/salty-max/knit
 ```
 
 In `build.zig`:
 
 ```zig
-const parsil = b.dependency("parsil", .{
+const knit = b.dependency("knit", .{
     .target = target,
     .optimize = optimize,
-}).module("parsil");
-exe.root_module.addImport("parsil", parsil);
+}).module("knit");
+exe.root_module.addImport("knit", knit);
 ```
 
 In your code — a left-associative arithmetic expression parser, ~10 lines:
 
 ```zig
 const std = @import("std");
-const P = @import("parsil");
+const P = @import("knit");
 
 const Ops = struct {
     fn add(a: i64, b: i64) i64 { return a + b; }
@@ -108,7 +108,7 @@ By default, `parser.run(input, allocator)` returns the first error and stops. Fo
 
 ```zig
 const std = @import("std");
-const P = @import("parsil");
+const P = @import("knit");
 
 // statement = identifier `=` intLit `;`
 const statement = P.sequenceOf(.{ P.identifier(), P.char('='), P.intLit(), P.char(';') });
@@ -369,7 +369,7 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for branching, commit conventions, and 
 ## Compatibility
 
 - **Zig minimum**: 0.16.0 (pinned in `build.zig.zon`).
-- **Zero runtime dependencies** — pure Zig, no C deps, no FFI. Your `build.zig.zon` only adds `parsil`.
+- **Zero runtime dependencies** — pure Zig, no C deps, no FFI. Your `build.zig.zon` only adds `knit`.
 - **Cross-targets** compiled on every PR: `x86_64-linux`, `aarch64-macos`, `x86_64-windows`, `aarch64-windows`, `wasm32-wasi`.
 - **Test runs** in CI: native Linux, every release mode (Debug, ReleaseSafe, ReleaseFast, ReleaseSmall). The library is pure Zig with no OS-specific I/O — runtime tests on macOS/Windows are mostly redundant given the cross-target compile gate.
 - **SemVer** from v1.0.0 onward. Breaking changes bump the major; new parsers/combinators bump the minor; bug fixes bump the patch. Each release ships with a `CHANGELOG.md` section enumerating the user-visible deltas.

@@ -8,12 +8,11 @@ pub fn build(b: *std.Build) void {
     // ----- Library module + artifact ---------------------------------------
     //
     // `core` exposed as its own named module so nested-layout parsers
-    // (e.g. parsers/many/many-one.zig in Phase 2) can `@import("core")`
-    // instead of a deep relative path that check-imports.sh forbids.
-    // Every file inside parsil_mod must use `@import("core")`
-    // consistently — file-imports of core.zig from a different depth
-    // would yield distinct types that don't unify across module
-    // boundaries.
+    // (e.g. parsers/many/many-one.zig) can `@import("core")` instead
+    // of a deep relative path that check-imports.sh forbids. Every
+    // file inside knit_mod must use `@import("core")` consistently —
+    // file-imports of core.zig from a different depth would yield
+    // distinct types that don't unify across module boundaries.
 
     const core_mod = b.addModule("core", .{
         .root_source_file = b.path("src/core.zig"),
@@ -21,16 +20,16 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
-    const parsil_mod = b.addModule("parsil", .{
-        .root_source_file = b.path("src/parsil.zig"),
+    const knit_mod = b.addModule("knit", .{
+        .root_source_file = b.path("src/knit.zig"),
         .target = target,
         .optimize = optimize,
     });
-    parsil_mod.addImport("core", core_mod);
+    knit_mod.addImport("core", core_mod);
 
     const lib = b.addLibrary(.{
-        .name = "parsil",
-        .root_module = parsil_mod,
+        .name = "knit",
+        .root_module = knit_mod,
     });
     b.installArtifact(lib);
 
@@ -51,7 +50,7 @@ pub fn build(b: *std.Build) void {
     // ----- Test discovery --------------------------------------------------
     //
     // Walk tests/ at build time and collect every *.test.zig. Each one becomes
-    // its own test artifact, importing `parsil` (the library module) and
+    // its own test artifact, importing `knit` (the library module) and
     // `util` (test helpers in tests/util.zig).
     //
     // Auto-discovery means contributors never edit a manifest: dropping a
@@ -63,7 +62,7 @@ pub fn build(b: *std.Build) void {
 
     const test_step = b.step("test", "Run native tests");
     for (test_files) |rel| {
-        const t = makeTest(b, parsil_mod, rel, target, optimize);
+        const t = makeTest(b, knit_mod, rel, target, optimize);
         test_step.dependOn(&b.addRunArtifact(t).step);
     }
 
@@ -78,7 +77,7 @@ pub fn build(b: *std.Build) void {
             b.fmt("Run native tests in {s} mode", .{mode_name}),
         );
         for (test_files) |rel| {
-            const t = makeTest(b, parsil_mod, rel, target, mode);
+            const t = makeTest(b, knit_mod, rel, target, mode);
             const run = b.addRunArtifact(t);
             mode_step.dependOn(&run.step);
             test_modes_step.dependOn(&run.step);
@@ -89,7 +88,7 @@ pub fn build(b: *std.Build) void {
 
     const test_all = b.step("test-all", "Native run + compile-only on extra targets");
     for (test_files) |rel| {
-        const t = makeTest(b, parsil_mod, rel, target, optimize);
+        const t = makeTest(b, knit_mod, rel, target, optimize);
         test_all.dependOn(&b.addRunArtifact(t).step);
     }
 
@@ -111,7 +110,7 @@ pub fn build(b: *std.Build) void {
     for (extra_targets) |tq| {
         const cross_target = b.resolveTargetQuery(tq);
         for (test_files) |rel| {
-            const t = makeTest(b, parsil_mod, rel, cross_target, optimize);
+            const t = makeTest(b, knit_mod, rel, cross_target, optimize);
             test_all.dependOn(&t.step);
         }
     }
@@ -202,10 +201,10 @@ fn collectTestFiles(b: *std.Build) []const []const u8 {
 }
 
 /// Build a test artifact for `tests/<rel>` against a (target, optimize) pair.
-/// The test module imports `parsil` (library) and `util` (helpers in tests/util.zig).
+/// The test module imports `knit` (library) and `util` (helpers in tests/util.zig).
 fn makeTest(
     b: *std.Build,
-    parsil_mod: *std.Build.Module,
+    knit_mod: *std.Build.Module,
     rel: []const u8,
     target: std.Build.ResolvedTarget,
     optimize: std.builtin.OptimizeMode,
@@ -215,14 +214,14 @@ fn makeTest(
         .target = target,
         .optimize = optimize,
     });
-    util_mod.addImport("parsil", parsil_mod);
+    util_mod.addImport("knit", knit_mod);
 
     const test_mod = b.createModule(.{
         .root_source_file = b.path(b.fmt("tests/{s}", .{rel})),
         .target = target,
         .optimize = optimize,
     });
-    test_mod.addImport("parsil", parsil_mod);
+    test_mod.addImport("knit", knit_mod);
     test_mod.addImport("util", util_mod);
 
     return b.addTest(.{

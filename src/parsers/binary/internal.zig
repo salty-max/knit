@@ -2,7 +2,7 @@ const std = @import("std");
 const core = @import("core");
 
 /// Byte-order tag for the binary numeric parsers. Mirrors
-/// `std.builtin.Endian` but lives here so the parsil API stays
+/// `std.builtin.Endian` but lives here so the knit API stays
 /// self-contained (consumers don't need to import std to spell
 /// out the endianness in a comptime construction).
 pub const Endian = enum {
