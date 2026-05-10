@@ -162,6 +162,8 @@ Requires Zig **0.16.0** or later.
 | `sepByOne(sep, p)` | `Parser([]T)` | One-or-more, otherwise like `sepBy`; fails with `p`'s error on zero matches. |
 | `sepEndBy(sep, p)` | `Parser([]T)` | Zero-or-more `p` separated by `sep`; trailing `sep` IS consumed. |
 | `sepEndByOne(sep, p)` | `Parser([]T)` | One-or-more, otherwise like `sepEndBy`. |
+| `endBy(sep, p)` | `Parser([]T)` | Zero-or-more `(p sep)` pairs; every match requires a trailing `sep` (unlike `sepBy` / `sepEndBy`, no leniency for the last). |
+| `endByOne(sep, p)` | `Parser([]T)` | One-or-more, otherwise like `endBy`. |
 | `atLeast(n, p)` | `Parser([]T)` | Match `p` at least `n` times (no upper bound); fails if fewer. Compile-time error if `n == 0`. |
 | `atMost(n, p)` | `Parser([]T)` | Match `p` at most `n` times; always succeeds. |
 | `repeatBetween(min, max, p)` | `Parser([]T)` | Match between `min` and `max` times (inclusive, comptime bounds). |
