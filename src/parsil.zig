@@ -109,6 +109,18 @@ pub const many = @import("parsers/many/many.zig").many;
 /// `parsers/many/many-one.zig`.
 pub const manyOne = @import("parsers/many/many-one.zig").manyOne;
 
+/// Match a parser at least `n` times (no upper bound); fails if
+/// fewer. See `parsers/many/at-least.zig`.
+pub const atLeast = @import("parsers/many/at-least.zig").atLeast;
+
+/// Match a parser at most `n` times; always succeeds (zero OK).
+/// See `parsers/many/at-most.zig`.
+pub const atMost = @import("parsers/many/at-most.zig").atMost;
+
+/// Match a parser between `min` and `max` times (inclusive,
+/// comptime bounds). See `parsers/many/repeat-between.zig`.
+pub const repeatBetween = @import("parsers/many/repeat-between.zig").repeatBetween;
+
 /// Zero-or-more values separated by `sep`; trailing sep is left
 /// in the input. See `parsers/sep-by/sep-by.zig`.
 pub const sepBy = @import("parsers/sep-by/sep-by.zig").sepBy;
@@ -174,6 +186,15 @@ pub const exactly = @import("parsers/exactly/exactly.zig").exactly;
 /// the next parser, then run that. Free-function complement to
 /// `Parser(T).chain`. See `parsers/chain/chain.zig`.
 pub const chain = @import("parsers/chain/chain.zig").chain;
+
+/// Left-associative fold over `operand (op operand)*`. `op`
+/// produces a binary fold function pointer. See
+/// `parsers/chain/chainl1.zig`.
+pub const chainl1 = @import("parsers/chain/chainl1.zig").chainl1;
+
+/// Right-associative fold; same shape as `chainl1`. See
+/// `parsers/chain/chainr1.zig`.
+pub const chainr1 = @import("parsers/chain/chainr1.zig").chainr1;
 
 /// Consume bytes until `stopP` would succeed; return the
 /// borrowed slice. See `parsers/everything-until/everything-until.zig`.
