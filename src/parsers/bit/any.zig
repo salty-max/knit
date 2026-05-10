@@ -5,6 +5,10 @@ const internal = @import("internal.zig");
 /// within each byte: MSB at `bit_offset = 0`). Returns `u1` (0
 /// or 1). EOF (cursor at or past end-of-input) → `.incomplete`.
 ///
+/// Value-agnostic — pairs with `zero()` / `one()` which assert
+/// a specific value. Mirrors `anyChar()`'s "single, any value"
+/// semantics for the bit-level family.
+///
 /// The cursor advances by exactly one bit: `bit_offset` bumps,
 /// crossing into the next byte if it reaches 8.
 ///
@@ -12,14 +16,14 @@ const internal = @import("internal.zig");
 /// ```zig
 /// // Byte 0xA0 = 0b10100000 — read three bits MSB-first → 1, 0, 1.
 /// const buf = [_]u8{0xA0};
-/// const b = comptime bit();
+/// const b = comptime any();
 /// // Run b three times in a sequenceOf, get .{ 1, 0, 1 }.
 /// ```
-pub fn bit() core.Parser(u1) {
+pub fn any() core.Parser(u1) {
     const Thunk = struct {
         fn parse(state: *core.ParseState) core.ParseResult(u1) {
             if (state.index >= state.input.len) {
-                return .{ .err = core.parseError("bit", state.index, "unexpected end of input", .{
+                return .{ .err = core.parseError("bit.any", state.index, "unexpected end of input", .{
                     .kind = .incomplete,
                 }) };
             }

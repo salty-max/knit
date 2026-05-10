@@ -287,13 +287,14 @@ pub const apply = @import("parsers/util/apply.zig").apply;
 /// definition); insert `byteAligned()` to reject the unaligned
 /// state explicitly. See `parsers/bit/`.
 pub const bit = struct {
-    const single = @import("parsers/bit/bit.zig");
+    const single = @import("parsers/bit/any.zig");
     const big = @import("parsers/bit/bits-be.zig");
     const little = @import("parsers/bit/bits-le.zig");
     const aligned = @import("parsers/bit/byte-aligned.zig");
 
-    /// Read the next single bit (MSB-first within each byte).
-    pub const bit = single.bit;
+    /// Read the next single bit (MSB-first within each byte),
+    /// value-agnostic. Pair with `zero()` / `one()` for assertions.
+    pub const any = single.any;
     /// Read the next `n` bits as `u64`, big-endian bit order.
     pub const bitsBe = big.bitsBe;
     /// Read the next `n` bits as `u64`, little-endian bit order.
