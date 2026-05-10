@@ -133,6 +133,8 @@ Requires Zig **0.16.0** or later.
 | `between(left, p, right)` | `Parser(T)` | Run `left`, `p`, `right`; keep only `p`'s value. Free-function complement to `Parser(T).between`. |
 | `lookAhead(p)` | `Parser(T)` | Run `p` non-consuming; success keeps the value but restores the cursor; failure passes through with cursor also restored. Free-function complement to `Parser(T).lookAhead`. |
 | `chain(p, U, fn)` | `Parser(U)` | Sequence with value dependency: run `p`, pass its value to `fn` to produce the next parser, then run that. Free-function complement to `Parser(T).chain`. |
+| `chainl1(T, operand, op)` | `Parser(T)` | Left-associative fold over `operand (op operand)*`. `op` produces a `*const fn(T, T) T`. Single-operand input → that operand. |
+| `chainr1(T, operand, op)` | `Parser(T)` | Right-associative fold; same shape as `chainl1`. Use over `chainl1` when the operator is right-assoc (e.g. `^`, `->`). |
 | `recursive(T, thunk)` | `Parser(T)` | Define a parser that references itself via a lazy `thunk: fn () Parser(T)`. Breaks construction-time cycles for recursive grammars. No left recursion. |
 | `everythingUntil(stopP)` | `Parser([]const u8)` | Consume bytes until `stopP` would succeed; return the borrowed slice. Cursor lands at the start of `stopP`'s match — `stopP` itself isn't consumed. EOF without match → err. |
 | `everyCharUntil(stopP)` | `Parser([]const u8)` | Codepoint-aware `everythingUntil` — advances by UTF-8 codepoint width per iteration. Invalid / truncated UTF-8 → err. |
@@ -160,6 +162,9 @@ Requires Zig **0.16.0** or later.
 | `sepByOne(sep, p)` | `Parser([]T)` | One-or-more, otherwise like `sepBy`; fails with `p`'s error on zero matches. |
 | `sepEndBy(sep, p)` | `Parser([]T)` | Zero-or-more `p` separated by `sep`; trailing `sep` IS consumed. |
 | `sepEndByOne(sep, p)` | `Parser([]T)` | One-or-more, otherwise like `sepEndBy`. |
+| `atLeast(n, p)` | `Parser([]T)` | Match `p` at least `n` times (no upper bound); fails if fewer. Compile-time error if `n == 0`. |
+| `atMost(n, p)` | `Parser([]T)` | Match `p` at most `n` times; always succeeds. |
+| `repeatBetween(min, max, p)` | `Parser([]T)` | Match between `min` and `max` times (inclusive, comptime bounds). |
 
 ### Error-context wrappers
 
