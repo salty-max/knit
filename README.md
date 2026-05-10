@@ -96,6 +96,7 @@ Requires Zig **0.16.0** or later.
 | `satisfy(predicate, name)` | `Parser(u21)` | Match codepoint passing `predicate`; `name` is the parser identity. |
 | `oneOf(set)` | `Parser(u21)` | Match a codepoint in `[]const u21` set. |
 | `noneOf(set)` | `Parser(u21)` | Match a codepoint NOT in the set. |
+| `anyCharExcept(p)` | `Parser(u8)` | Consume one byte unless `p` would match at the cursor; useful for "consume until sentinel" patterns. |
 
 ### Digit primitives
 
@@ -103,6 +104,8 @@ Requires Zig **0.16.0** or later.
 |--------|------|-------------|
 | `digit()` | `Parser(u21)` | Match a single ASCII decimal digit (`'0'..'9'`). |
 | `digits()` | `Parser([]const u8)` | Match one-or-more ASCII decimal digits, returning the borrowed byte slice. |
+| `hexDigit()` | `Parser(u21)` | Match a single ASCII hex digit (`[0-9a-fA-F]`). |
+| `octDigit()` | `Parser(u21)` | Match a single ASCII octal digit (`[0-7]`). |
 
 ### Letter primitives
 
@@ -110,6 +113,9 @@ Requires Zig **0.16.0** or later.
 |--------|------|-------------|
 | `letter()` | `Parser(u21)` | Match a single ASCII letter (`a-z` or `A-Z`). |
 | `letters()` | `Parser([]const u8)` | Match one-or-more ASCII letters, returning the borrowed byte slice. |
+| `alphaNum()` | `Parser(u21)` | Match a single ASCII alphanumeric (`[a-zA-Z0-9]`). |
+| `upper()` | `Parser(u21)` | Match a single ASCII uppercase letter (`[A-Z]`). |
+| `lower()` | `Parser(u21)` | Match a single ASCII lowercase letter (`[a-z]`). |
 
 ### Whitespace primitives
 
@@ -133,6 +139,7 @@ Requires Zig **0.16.0** or later.
 | `peek()` | `Parser(u8)` | Return the byte at the cursor without advancing. Byte-level (no UTF-8 decode). EOF → `.incomplete`. |
 | `endOfInput()` | `Parser(void)` | Assert the cursor is at end-of-input. Err carries `actual` borrowed from the leftover prefix (capped at 16 bytes). |
 | `startOfInput()` | `Parser(void)` | Assert the cursor is at the start of input (index 0). Symmetric to `endOfInput`. |
+| `index()` | `Parser(usize)` | Return the current byte offset without consuming. Useful inside `chain` / `apply` to capture positions without `withSpan`. |
 
 ### Alternative combinators
 
@@ -186,6 +193,39 @@ Requires Zig **0.16.0** or later.
 | `floatLit()` | `Parser(f64)` | Unsigned decimal float with optional fraction and/or exponent. Bare integers fall through to `intLit`'s shape. |
 | `signed(p)` | `Parser(T)` | Wrap a signed-numeric inner parser to admit a leading `-` / `+`. Compile-time error on unsigned/non-numeric `T`. |
 | `stringLit()` | `Parser([]const u8)` | Double-quoted string with `\n \t \r \\ \" \xHH` escapes; returns the decoded slice (**allocated** — needs `runArena`). |
+
+### Binary primitives
+
+Fixed-width numeric reads, namespaced under `binary.` so the parser names don't shadow Zig's primitive type names at the top level.
+
+| Symbol | Type | Description |
+|--------|------|-------------|
+| `binary.u8()` / `binary.i8()` | `Parser(u8)` / `Parser(i8)` | One byte (un/signed). |
+| `binary.u16le()` / `binary.u16be()` | `Parser(u16)` | Two-byte unsigned, little/big-endian. |
+| `binary.i16le()` / `binary.i16be()` | `Parser(i16)` | Two-byte signed. |
+| `binary.u32le()` / `binary.u32be()` | `Parser(u32)` | Four-byte unsigned. |
+| `binary.i32le()` / `binary.i32be()` | `Parser(i32)` | Four-byte signed. |
+| `binary.u64le()` / `binary.u64be()` | `Parser(u64)` | Eight-byte unsigned. |
+| `binary.i64le()` / `binary.i64be()` | `Parser(i64)` | Eight-byte signed. |
+| `binary.f32le()` / `binary.f32be()` | `Parser(f32)` | IEEE-754 binary32. |
+| `binary.f64le()` / `binary.f64be()` | `Parser(f64)` | IEEE-754 binary64. |
+| `binary.bytes(n)` | `Parser([]const u8)` | Read exactly `n` raw bytes; borrowed slice. |
+| `binary.Endian` | `enum { little, big }` | Byte-order tag re-exported from internal. |
+
+EOF before the required width always yields `kind = .incomplete`.
+
+### Bit primitives
+
+Sub-byte reads, namespaced under `bit.`. Track sub-byte position via `state.bit_offset: u3`. Mixing with byte parsers: a byte `advance(n)` always resets `bit_offset` to 0 — insert `bit.byteAligned()` to reject the unaligned state explicitly.
+
+| Symbol | Type | Description |
+|--------|------|-------------|
+| `bit.bit()` | `Parser(u1)` | Next single bit (MSB-first within each byte). |
+| `bit.bitsBe(n)` | `Parser(u64)` | Next `n` bits (1..=64), big-endian bit order — first bit becomes MSB. |
+| `bit.bitsLe(n)` | `Parser(u64)` | Next `n` bits, little-endian bit order — first bit becomes LSB; bytes still in input order. |
+| `bit.byteAligned()` | `Parser(void)` | Assert `bit_offset == 0`; err otherwise. |
+| `bit.zero()` | `Parser(void)` | Assert next bit is `0`; consume it. |
+| `bit.one()` | `Parser(void)` | Assert next bit is `1`; consume it. |
 
 ### Diagnostics helpers
 
