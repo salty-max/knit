@@ -736,8 +736,10 @@ pub fn Parser(comptime T: type) type {
             const Thunk = struct {
                 fn parse(state: *ParseState) ParseResult(T) {
                     const saved = state.index;
+                    const saved_bit_offset = state.bit_offset;
                     const r = self.parseFn(state);
                     state.index = saved;
+                    state.bit_offset = saved_bit_offset;
                     if (r == .err) return .{ .err = r.err };
                     return ok(r.ok.value, saved);
                 }

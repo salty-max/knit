@@ -14,10 +14,12 @@ const core = @import("core");
 /// - `\"` → 0x22 (`"`)
 /// - `\xHH` → byte HH (two hex digits, case-insensitive)
 ///
-/// **Allocates.** Unlike most parsil parsers, `stringLit` cannot
-/// borrow from `state.input` because the decoded form differs
-/// from the source bytes. Use `runArena` so the slice is reclaimed
-/// in bulk on `.deinit()`.
+/// **Always allocates.** `stringLit` allocates the result slice
+/// unconditionally — even unescaped strings like `"hello"` go
+/// through the per-byte buffer (no zero-alloc fast path). This
+/// keeps the lifetime story simple: the returned slice is always
+/// owned by `state.allocator`, never a borrow of the input. Use
+/// `runArena` so it's reclaimed in bulk on `.deinit()`.
 ///
 /// Failure shapes:
 /// - Missing opening `"` → `.syntactic`

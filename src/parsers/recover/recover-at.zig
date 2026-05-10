@@ -57,8 +57,10 @@ pub fn recoverAt(comptime p: anytype, comptime anchors: anytype) core.Parser(?@T
             while (true) {
                 inline for (anchors) |anchor| {
                     const saved = state.index;
+                    const saved_bit_offset = state.bit_offset;
                     const ar = anchor.parseFn(state);
                     state.index = saved;
+                    state.bit_offset = saved_bit_offset;
                     if (ar == .ok) {
                         // Push the original (now-recovered) err to the
                         // diagnostic sink if one is attached; runDiag

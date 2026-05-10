@@ -39,9 +39,11 @@ pub fn choice(comptime T: type, comptime parsers: []const core.Parser(T)) core.P
     const Thunk = struct {
         fn parse(state: *core.ParseState) core.ParseResult(T) {
             const start = state.index;
+            const start_bit_offset = state.bit_offset;
             var furthest: ?core.ParseError = null;
             inline for (parsers) |p| {
                 state.index = start;
+                state.bit_offset = start_bit_offset;
                 const r = p.parseFn(state);
                 switch (r) {
                     .ok => return r,

@@ -28,9 +28,11 @@ pub fn possibly(comptime p: anytype) core.Parser(?@TypeOf(p).Output) {
     const Thunk = struct {
         fn parse(state: *core.ParseState) core.ParseResult(?T) {
             const before = state.index;
+            const before_bit_offset = state.bit_offset;
             const r = p.parseFn(state);
             if (r == .err) {
                 state.index = before;
+                state.bit_offset = before_bit_offset;
                 // @as: coerce the untyped null literal to ?T so core.ok infers Parser(?T).
                 return core.ok(@as(?T, null), before);
             }

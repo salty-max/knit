@@ -13,10 +13,19 @@ const internal = @import("internal.zig");
 /// well-defined boundary semantics).
 ///
 /// Identifier-continuation chars are `[a-zA-Z0-9_]` per the
-/// default lexer profile (same as the future `identifier` parser
-/// in #48). For Unicode-letter identifiers, the consumer should
-/// build their own check on top of `str(...)` and a richer
-/// `satisfy` predicate.
+/// default lexer profile (same as the `identifier` parser).
+/// For Unicode-letter identifiers, the consumer should build
+/// their own check on top of `str(...)` and a richer `satisfy`
+/// predicate.
+///
+/// **UTF-8 caveat.** The boundary check operates on bytes, not
+/// codepoints. A multi-byte UTF-8 codepoint like `'é'`
+/// (`0xC3 0xA9`) has a leading byte ≥ `0xC0` which is NOT
+/// matched by the ASCII-only `isIdentContinuation` — so
+/// `keyword("if").run("if é", ...)` succeeds even though `'é'`
+/// is a valid identifier character in many real-world languages.
+/// If your grammar needs Unicode-aware boundary checks, build
+/// the keyword + boundary check manually with `satisfy`.
 ///
 /// **Perf.** Single byte-by-byte literal compare + one boundary
 /// byte check + the inlined whitespace skip. Zero allocation —

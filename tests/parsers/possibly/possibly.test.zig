@@ -38,6 +38,22 @@ test "possibly: works on slice-returning inner parser" {
     try std.testing.expectEqual(@as(usize, 3), r.ok.index);
 }
 
+test "possibly: bit_offset restored when inner fails post-bit-advance (regression)" {
+    // Inner reads 3 bits then `.skip(str("X"))` fails. possibly catches
+    // the failure and returns null. bit_offset must be restored so a
+    // subsequent bit read sees the original cursor.
+    //
+    // Without the fix: subsequent bitsBe(3) would read bits 3-5 = 0
+    // instead of bits 0-2 = 5 from 0xA0.
+    const buf = [_]u8{0xA0};
+    const opt = comptime P.possibly(P.bit.bitsBe(3).skip(P.str("X")));
+    const seq = comptime P.sequenceOf(.{ opt, P.bit.bitsBe(3) });
+    const r = seq.run(&buf, a);
+    try std.testing.expect(r == .ok);
+    try std.testing.expect(r.ok.value[0] == null);
+    try std.testing.expectEqual(@as(u64, 5), r.ok.value[1]);
+}
+
 test "possibly: rolls back partial inner consumption on failure" {
     // str("foobar") consumes "foo" before failing at index 3.
     // possibly must rewind to index 0 so the cursor reads "fooXY"
