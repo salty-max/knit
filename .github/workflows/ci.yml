@@ -40,7 +40,7 @@ jobs:
   test:
     name: Test (Linux, ${{ matrix.mode }})
     runs-on: ubuntu-latest
-    # parsil-zig is pure Zig with no OS-specific I/O — runtime divergence
+    # knit is pure Zig with no OS-specific I/O — runtime divergence
     # across OSes is vanishingly rare. Cross-target *compile* on macOS,
     # Windows, and wasm32-wasi is covered by the `cross-targets` job
     # below; that catches platform-level breakage without paying for

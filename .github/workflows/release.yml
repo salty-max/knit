@@ -60,7 +60,7 @@ jobs:
         id: pkg
         run: |
           set -euo pipefail
-          name="parsil-zig-${GITHUB_REF_NAME}-${{ matrix.target }}"
+          name="knit-${GITHUB_REF_NAME}-${{ matrix.target }}"
           mkdir -p "dist/$name"
           # zig install produces zig-out/lib (and possibly zig-out/include).
           if [[ -d zig-out/lib ]]; then
@@ -79,7 +79,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: parsil-zig-${{ matrix.target }}
+          name: knit-${{ matrix.target }}
           path: ${{ steps.pkg.outputs.artifact }}
           if-no-files-found: error
 
