@@ -1,14 +1,26 @@
 # Parsil (Zig)
 
-A tiny, composable parser-combinator toolkit for Zig. Small parsers compose into bigger ones via combinators (`sequenceOf`, `choice`, `many`, …); a clear minimal core (`ParseState`, `ParseResult`, `Parser(T)`, `ParseError`) underpins every primitive.
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
+[![Zig 0.16+](https://img.shields.io/badge/Zig-0.16%2B-f7a41d.svg)](https://ziglang.org/download/)
 
-Parsil-zig is the Zig sibling of [parsil (TypeScript)](https://github.com/salty-max/parsil) — full API parity with parsil-TS 3.0.0 is the v1.0.0 milestone (work in progress under [v1.0.0](https://github.com/salty-max/parsil-zig/milestone/1)).
+A tiny, composable parser-combinator toolkit for Zig. Build complex grammars from small primitives (`char`, `digit`, `str`, `intLit`, …) via combinators (`sequenceOf`, `choice`, `many`, `chainl1`, …), with structured errors and opt-in multi-error recovery for grammar-author-friendly diagnostics.
+
+Parsil-zig is the Zig sibling of [parsil (TypeScript)](https://github.com/salty-max/parsil) — full API parity with parsil-TS 3.0.0, plus Zig-specific value-adds (`Diagnostic` / `runDiag` for multi-error reporting, a bit-level parser family).
+
+## Why parsil-zig
+
+- **Zero dependencies** — pure Zig, no C, no FFI, no lockfile to chase.
+- **Comptime-monomorphic** — `Parser(T)` is a plain function pointer with no `*anyopaque` and no `anyerror`. Types flow through your grammar all the way to the result.
+- **Structured errors** — every primitive emits `ParseError { parser, index, message, expected?, actual?, context?, kind, severity }`; pair with `linecol(input, index)` for human-readable line/column diagnostics.
+- **Multi-error recovery** — opt-in `runDiag` surfaces every malformed construct in one pass; useful for compilers that want to report N errors instead of stopping at the first. Zero perf cost when unused.
+- **Cross-target** — Linux, macOS, Windows, `wasm32-wasi`, all built on every PR.
 
 ## Table of contents
 
 - [Quick Start](#quick-start)
 - [Core Concepts](#core-concepts)
-- [Parsers (current shipping set)](#parsers)
+- [Diagnostics & multi-error reporting](#diagnostics)
+- [API Reference](#api-reference)
 - [Development](#development)
 - [Compatibility](#compatibility)
 - [Contributing](#contributing)
@@ -33,28 +45,37 @@ const parsil = b.dependency("parsil_zig", .{
 exe.root_module.addImport("parsil", parsil);
 ```
 
-In your code:
+In your code — a left-associative arithmetic expression parser, ~10 lines:
 
 ```zig
 const std = @import("std");
 const P = @import("parsil");
 
+const Ops = struct {
+    fn add(a: i64, b: i64) i64 { return a + b; }
+    fn sub(a: i64, b: i64) i64 { return a - b; }
+    fn pick(c: u21) *const fn (i64, i64) i64 {
+        return if (c == '+') &add else &sub;
+    }
+};
+
+const op = P.oneOf(&.{ '+', '-' }).map(*const fn (i64, i64) i64, Ops.pick);
+const expr = P.chainl1(i64, P.intLit(), op);
+
 pub fn main() !void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
 
-    const r = P.str("hello").run("hello world", arena.allocator());
-    if (r.isOk()) {
-        const ok = r.ok; // value: []const u8, index: usize
-        std.debug.print("matched '{s}' at offset {d}\n", .{ ok.value, ok.index });
+    const r = expr.run("1+2-3", arena.allocator());
+    if (r == .ok) {
+        std.debug.print("= {d}\n", .{r.ok.value}); // = 0  (left-assoc: (1+2)-3)
     } else {
-        const e = r.err; // parser, index, message, expected?, actual?, ...
-        std.debug.print("parse failed at {d}: {s}\n", .{ e.index, e.message });
+        std.debug.print("error at {d}: {s}\n", .{ r.err.index, r.err.message });
     }
 }
 ```
 
-The allocator is used for slice-producing combinators (`many`, `sepBy`, `sequenceOf`) and for `ParseError.context` / `notes`. An **arena** is the canonical choice — `arena.deinit()` frees everything in bulk. The `.runArena(input, child)` convenience does the wrap-and-deinit-on-result for you.
+The allocator is used for slice-producing combinators (`many`, `sepBy`, `sequenceOf`) and for `ParseError.context`. An **arena** is the canonical choice — `arena.deinit()` frees everything in bulk. The `.runArena(input, child)` convenience wraps an arena lifecycle and returns a result that owns it.
 
 Requires Zig **0.16.0** or later.
 
@@ -67,17 +88,59 @@ Requires Zig **0.16.0** or later.
 
 - **`ParseState`** — holds the input slice and current cursor; `.advance(n)` clamps to input length and is overflow-safe.
 - **`ParseResult(T)`** — tagged union `.ok = { value: T, index: usize }` or `.err = ParseError`. `result.isOk()` is a type guard.
-- **`Parser(T)`** — wraps a `*const fn (*ParseState) ParseResult(T)`. Run via `.run(input)` for the convenience entry point or `.parse(state)` when composing.
-- **`ParseError`** — structured error: `{ parser, index, message, expected?, actual?, context? }`. The rich shape lands fully with the v1.0.0 milestone; the current minimal form is `{ index, msg, tag }`.
+- **`Parser(T)`** — wraps a `*const fn (*ParseState) ParseResult(T)` plus chainable methods. Run via `.run(input, allocator)` (or `.runArena(input, child)` for arena lifecycle) at the top level, or `.parse(state)` when composing inside another parser.
+- **`ParseError`** — structured error: `{ parser, index, message, expected?, actual?, context?, kind, severity }`. Format with `formatParseError(allocator, err)` for human-readable output, or attach a `(line, col)` via `linecol(input, err.index)`.
 
 `Parser(T)` is a comptime-monomorphic function pointer — every parser captures its state via a comptime closure. Combinators that compose other parsers take their inputs as `comptime` parameters; runtime-assembled grammars use `recursive(thunk)`. There is no `*anyopaque` anywhere in the library.
 
 </details>
 
-<a id="parsers"></a>
+<a id="diagnostics"></a>
 
-<details>
-<summary><b>Parsers (current shipping set)</b></summary>
+<details open>
+<summary><b>Diagnostics & multi-error reporting</b></summary>
+
+By default, `parser.run(input, allocator)` returns the first error and stops. For grammars where you'd rather collect every malformed construct in one pass (asm, language compilers), wrap your top-level rule with `recoverAt` and run it via `runDiag` / `runDiagArena`:
+
+```zig
+const std = @import("std");
+const P = @import("parsil");
+
+// statement = identifier `=` intLit `;`
+const statement = P.sequenceOf(.{ P.identifier(), P.char('='), P.intLit(), P.char(';') });
+
+// On failure inside a statement, scan forward to the next `;` and recover.
+const program = P.recoverAt(statement, .{P.char(';')}).skip(P.possibly(P.char(';')));
+
+pub fn main() !void {
+    var owned = try P.many(program).runDiagArena("x=1;bad;y=2;", std.heap.page_allocator);
+    defer owned.deinit();
+
+    switch (owned.diag) {
+        .ok => |ok| {
+            std.debug.print("parsed {d} statements; {d} recovered errors:\n", .{ ok.value.len, ok.recovered.len });
+            for (ok.recovered) |err| std.debug.print("  - at {d}: {s}\n", .{ err.index, err.message });
+        },
+        .err => |e| std.debug.print("fatal: {s}\n", .{e.primary.message}),
+    }
+}
+```
+
+Output:
+
+```
+parsed 3 statements; 1 recovered errors:
+  - at 7: unexpected codepoint
+```
+
+The plain `.run` / `.runArena` paths leave the recovery sink unset — recovered errors are dropped silently, so existing single-error grammars pay zero perf cost.
+
+</details>
+
+<a id="api-reference"></a>
+
+<details open>
+<summary><b>API Reference</b></summary>
 
 ### Primitive parsers
 
@@ -265,7 +328,7 @@ Sub-byte reads, namespaced under `bit.`. Track sub-byte position via `state.bit_
 | `.withSpan()` | Wrap result with byte offsets |
 | `.spanMap(U, build)` | Build a caller-shaped node from value + span |
 
-Phase 2 (the parsil-TS 3.0 parity set — `char`, `digits`, `letters`, `whitespace`, `sequenceOf`, `choice`, `many`, `sepBy`, `between`, `possibly`, `lookAhead`, `peek`, `endOfInput`, `startOfInput`, `everythingUntil`, `recoverAt`, `recursive`, `lexeme`, `lang`, `binary`, `bit`) is **complete**. The v1.0.0 milestone is wrapping up with parity gap-fills (#113-#121) and a multi-axis pre-release audit. See [milestone v1.0.0](https://github.com/salty-max/parsil-zig/milestone/1) for the latest state.
+Full parity with parsil-TS 3.0.0 across the core, char, digit, letter, whitespace, sequence, choice, many/sepBy/endBy/repeatBetween, lookahead/recovery, lexeme, lang, binary, and bit families. See the [CHANGELOG](./CHANGELOG.md) for per-version detail.
 
 </details>
 
@@ -317,8 +380,10 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for branching, commit conventions, and 
 <summary><b>Compatibility</b></summary>
 
 - **Zig minimum**: 0.16.0 (pinned in `build.zig.zon`).
+- **Zero runtime dependencies** — pure Zig, no C deps, no FFI. Your `build.zig.zon` only adds `parsil-zig`.
 - **Cross-targets** compiled on every PR: `x86_64-linux`, `aarch64-macos`, `x86_64-windows`, `aarch64-windows`, `wasm32-wasi`.
 - **Test runs** in CI: native Linux, every release mode (Debug, ReleaseSafe, ReleaseFast, ReleaseSmall). The library is pure Zig with no OS-specific I/O — runtime tests on macOS/Windows are mostly redundant given the cross-target compile gate.
+- **SemVer** from v1.0.0 onward. Breaking changes bump the major; new parsers/combinators bump the minor; bug fixes bump the patch. Each release ships with a `CHANGELOG.md` section enumerating the user-visible deltas.
 
 </details>
 
@@ -329,7 +394,7 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for branching, commit conventions, and 
 
 - See [CONTRIBUTING.md](./CONTRIBUTING.md) for branching, commit format, the self-review loop, and the required toolchain.
 - Bug reports and feature ideas → open a GitHub issue.
-- New parsers and combinators → use the **parser** issue template and pick up an issue from the [v1.0.0 milestone](https://github.com/salty-max/parsil-zig/milestone/1).
+- New parsers and combinators → use the **parser** issue template; tag-team welcome on open issues.
 
 </details>
 
