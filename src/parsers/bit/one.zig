@@ -6,7 +6,7 @@ const internal = @import("internal.zig");
 /// next bit is `0` → `.syntactic`.
 ///
 /// Symmetric counterpart to `bit.zero()`. Same cursor-advance
-/// semantics as `bit()` — `bit_offset` bumps by 1.
+/// semantics as `any()` — `bit_offset` bumps by 1.
 ///
 /// Example:
 /// ```zig

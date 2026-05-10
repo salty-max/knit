@@ -5,7 +5,7 @@ const internal = @import("internal.zig");
 /// consume it. Returns `Parser(void)`. EOF → `.incomplete`;
 /// next bit is `1` → `.syntactic`.
 ///
-/// Same cursor-advance semantics as `bit()` — `bit_offset`
+/// Same cursor-advance semantics as `any()` — `bit_offset`
 /// bumps by 1, crossing byte boundaries via `advanceBits`.
 ///
 /// Example:

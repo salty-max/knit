@@ -227,7 +227,7 @@ Sub-byte reads, namespaced under `bit.`. Track sub-byte position via `state.bit_
 
 | Symbol | Type | Description |
 |--------|------|-------------|
-| `bit.bit()` | `Parser(u1)` | Next single bit (MSB-first within each byte). |
+| `bit.any()` | `Parser(u1)` | Next single bit (MSB-first within each byte), value-agnostic. Pair with `bit.zero()` / `bit.one()` for assertions. |
 | `bit.bitsBe(n)` | `Parser(u64)` | Next `n` bits (1..=64), big-endian bit order — first bit becomes MSB. |
 | `bit.bitsLe(n)` | `Parser(u64)` | Next `n` bits, little-endian bit order — first bit becomes LSB; bytes still in input order. |
 | `bit.byteAligned()` | `Parser(void)` | Assert `bit_offset == 0`; err otherwise. |
