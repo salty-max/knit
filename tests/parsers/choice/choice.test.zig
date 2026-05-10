@@ -129,6 +129,22 @@ test "choice: bit_offset restored across alternatives (regression)" {
     try std.testing.expectEqual(@as(u64, 5), r.ok.value);
 }
 
+test "choice: recovered errs from a discarded alt are rolled back (regression)" {
+    // Alt 1: recoverAt pushes 1 err to the diagnostic sink, then `.skip(str("ZZZ"))`
+    //        fails (no 'ZZZ' in input). Alt 1 nets to err.
+    // Alt 2: succeed(null) — picks alt 2.
+    // Without the fix: alt 1's recovered err stays in the sink → diag.recovered.len == 1.
+    // With the fix: alt 1's contribution rolled back → diag.recovered.len == 0.
+    const buf = "abc";
+    const alt1 = comptime P.recoverAt(P.str("X"), .{P.peek()}).skip(P.str("ZZZ"));
+    const alt2 = comptime P.succeed(?[]const u8, null);
+    const p = comptime P.choice(?[]const u8, &.{ alt1, alt2 });
+    var owned = try p.runDiagArena(buf, a);
+    defer owned.deinit();
+    try std.testing.expect(owned.diag == .ok);
+    try std.testing.expectEqual(@as(usize, 0), owned.diag.ok.recovered.len);
+}
+
 test "choice: empty parsers slice triggers a compile error" {
     // Hand-test: uncomment to see the @compileError message.
     // const _ = comptime P.choice([]const u8, &.{});

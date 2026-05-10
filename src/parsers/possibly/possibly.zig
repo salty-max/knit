@@ -29,10 +29,12 @@ pub fn possibly(comptime p: anytype) core.Parser(?@TypeOf(p).Output) {
         fn parse(state: *core.ParseState) core.ParseResult(?T) {
             const before = state.index;
             const before_bit_offset = state.bit_offset;
+            const before_recovered_len: usize = if (state.recovered_errs) |list| list.items.len else 0;
             const r = p.parseFn(state);
             if (r == .err) {
                 state.index = before;
                 state.bit_offset = before_bit_offset;
+                if (state.recovered_errs) |list| list.shrinkRetainingCapacity(before_recovered_len);
                 // @as: coerce the untyped null literal to ?T so core.ok infers Parser(?T).
                 return core.ok(@as(?T, null), before);
             }
