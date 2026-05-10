@@ -637,6 +637,13 @@ pub fn Parser(comptime T: type) type {
         }
 
         // ----- Fluent combinator methods (all comptime-self) ---------------
+        //
+        // Allocator behavior: every method below is a pure pass-through
+        // on the allocator side — none of them allocate, and each
+        // inherits whatever allocator semantics the wrapped parser(s)
+        // have. The only state these methods touch is the cursor on
+        // backtracking-style methods (lookAhead saves/restores
+        // `index` + `bit_offset` + `recovered_errs.items.len`).
 
         /// Transform the success value through `fn_map`. Failures
         /// pass through unchanged.

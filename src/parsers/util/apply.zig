@@ -18,6 +18,9 @@ const sequence_of = @import("../sequence-of/sequence-of.zig");
 /// underlying `sequenceOf` (cursor at the failing position;
 /// `fn_apply` is not called).
 ///
+/// Pass-through on the parser side — inherits allocator behavior
+/// from the inner parsers; `apply` itself adds no allocation.
+///
 /// Example:
 /// ```zig
 /// const Pair = struct { num: i64, name: []const u8 };

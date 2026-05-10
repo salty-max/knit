@@ -218,7 +218,7 @@ Requires Zig **0.16.0** or later.
 | `.withSpan()` | Wrap result with byte offsets |
 | `.spanMap(U, build)` | Build a caller-shaped node from value + span |
 
-The Phase 2 set (`char`, `digits`, `letters`, `sequenceOf`, `choice`, `many`, `sepBy`, `between`, `possibly`, `lookAhead`, `peek`, `endOfInput`, `everythingUntil`, `recover`, `recursive`, `lexeme`, `lang`, `binary`, `bit`, …) lands progressively under [milestone v1.0.0](https://github.com/salty-max/parsil-zig/milestone/1).
+Phase 2 (the parsil-TS 3.0 parity set — `char`, `digits`, `letters`, `whitespace`, `sequenceOf`, `choice`, `many`, `sepBy`, `between`, `possibly`, `lookAhead`, `peek`, `endOfInput`, `startOfInput`, `everythingUntil`, `recoverAt`, `recursive`, `lexeme`, `lang`, `binary`, `bit`) is **complete**. The v1.0.0 milestone is wrapping up with parity gap-fills (#113-#121) and a multi-axis pre-release audit. See [milestone v1.0.0](https://github.com/salty-max/parsil-zig/milestone/1) for the latest state.
 
 </details>
 
