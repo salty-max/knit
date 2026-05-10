@@ -19,8 +19,7 @@ pub fn CollectResult(comptime T: type) type {
 ///
 /// The no-progress guard is critical: if `p` succeeds without
 /// consuming any input (e.g. `whitespace()`, `succeed(...)`,
-/// `lookAhead`), looping again would re-run forever. Mirrors the
-/// parsil-TS fix from issue #26 there.
+/// `lookAhead`), looping again would re-run forever.
 ///
 /// Allocator OOM propagates as a Zig error; the caller wraps it
 /// into a `ParseError` with the appropriate parser identity.

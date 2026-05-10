@@ -7,9 +7,8 @@ const sequence_of = @import("../sequence-of/sequence-of.zig");
 /// reads more naturally when the result is a domain-shaped
 /// struct built from positional sub-parses.
 ///
-/// Replaces parsil-TS's `coroutine` use cases: a do-notation-
-/// like API for "parse N things, then build something from
-/// them". Supports any arity (1..N) — the parsers tuple shape
+/// A do-notation-like API for "parse N things, then build something
+/// from them". Supports any arity (1..N) — the parsers tuple shape
 /// determines the function's input shape.
 ///
 /// `fn_apply` takes the same tuple type that `sequenceOf`

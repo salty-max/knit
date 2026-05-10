@@ -30,9 +30,9 @@ pub const ParseErrorKind = enum {
     incomplete,
 
     /// Higher-level constraint violated by a consumer parser: name
-    /// not declared, type mismatch, semantic conflict. parsil-zig
-    /// itself rarely emits these (mostly consumer-emitted via
-    /// `errorMap` at the boundary).
+    /// not declared, type mismatch, semantic conflict. parsil itself
+    /// rarely emits these (mostly consumer-emitted via `errorMap`
+    /// at the boundary).
     semantic,
 
     /// Library bug or invariant violation. Should never reach end
@@ -42,16 +42,16 @@ pub const ParseErrorKind = enum {
 
 /// Structured failure payload returned by every parser primitive.
 ///
-/// Mirrors parsil-TS 3.0's `ParseError` shape so consumers can branch
-/// on `parser` identity, read `expected`/`actual` directly, walk
-/// `context`, and surface a `hint` without parsing strings.
+/// Consumers can branch on the `parser` identity, read
+/// `expected` / `actual` directly, walk `context`, and surface a
+/// `hint` without parsing strings.
 ///
 /// String fields (`parser`, `message`, `expected`, `actual`, `hint`,
 /// entries of `context`) carry borrowed references — primitives emit
 /// string literals (which outlive any parse), so no allocation is
-/// required for the basic shape. Phase 1 #20 introduces an arena
-/// allocator that owns dynamic `context` slices when `inContext`
-/// (#25) wraps a child parser.
+/// required for the basic shape. Dynamic `context` slices accumulated
+/// by `inContext` are owned by the arena allocator threaded through
+/// `ParseState`.
 pub const ParseError = struct {
     /// Machine-readable identity of the emitting parser
     /// (`"char"`, `"str"`, `"keyword"`, …).
@@ -346,10 +346,9 @@ pub fn ParseResult(comptime T: type) type {
         /// Type guard narrowing the union to its `.ok` arm.
         ///
         /// Tests in this repo use the direct `result == .ok` pattern;
-        /// `isOk` is exported for consumers who prefer the method form
-        /// (mirrors parsil-TS's `isOk` / `isError` guards).
+        /// `isOk` is exported for consumers who prefer the method form.
         // allow-unused: public type guard; tests use direct '== .ok' pattern,
-        // but consumers can call `.isOk()`. Mirrors parsil-TS's type guards.
+        // but consumers can call `.isOk()`.
         pub fn isOk(self: @This()) bool {
             return switch (self) {
                 .ok => true,
@@ -368,15 +367,9 @@ pub fn ParseResult(comptime T: type) type {
 /// return ok(matched_slice, state.index);
 /// ```
 ///
-/// Note: parsil-TS exposes a richer set of helpers
-/// (`forward(state)`, `updateState(state, index, value)`,
-/// `updateResult(state, value)`, `updateError(state, error)`) for its
-/// state-transformer model where `ParserState<T, E>` carries the
-/// running result. Parsil-Zig deliberately splits `ParseState`
-/// (cursor + allocator) from `ParseResult(T)` (the value envelope),
-/// so those helpers don't apply — there's no "state with result" to
-/// fork or forward. The minimal `ok` constructor is the only sugar
-/// the new model wants; the failure path stays as
+/// Parsil splits `ParseState` (cursor + allocator) from
+/// `ParseResult(T)` (the value envelope), so a single `ok` constructor
+/// is the only sugar callers usually need; the failure path stays as
 /// `.{ .err = parseError(...) }` since the explicit struct literal
 /// is already concise.
 pub fn ok(value: anytype, index: usize) ParseResult(@TypeOf(value)) {

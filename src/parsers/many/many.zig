@@ -9,7 +9,7 @@ const internal = @import("internal.zig");
 /// **No-progress break.** If `p` succeeds without consuming any
 /// input (`succeed`, `lookAhead`, `whitespace()` on a non-whitespace
 /// cursor, …), `many` records the value once and stops; otherwise
-/// it would loop forever. Mirrors parsil-TS issue #26's fix.
+/// it would loop forever.
 ///
 /// **Allocator note.** The result slice and the inner parser's
 /// transient errors (the last failed attempt) are owned by

@@ -13,11 +13,10 @@ const internal = @import("internal.zig");
 /// EOF (fewer than `n` bits remaining) → `.incomplete`.
 ///
 /// **Note on bit order semantics.** "Little-endian" for bits is
-/// less standardised than for bytes — this implementation
-/// matches the protocol convention used by the parsil-TS
-/// reference: bytes in input order, LSB-first within each byte.
-/// If you need a different bit-packing convention, build it via
-/// `bit()` plus a `.map`.
+/// less standardised than for bytes — this implementation reads
+/// bytes in input order and packs LSB-first within each byte. If
+/// you need a different bit-packing convention, build it via
+/// `bit.any()` plus a `.map`.
 ///
 /// Example:
 /// ```zig

@@ -11,9 +11,9 @@ const core = @import("core");
 /// **Perf.** Zero allocation for the consumed slice (borrowed).
 /// However, `stopP` is run at every position — for input of length
 /// N where the match is at the end, that's N attempts. If `stopP`
-/// allocates on err (current parsil-zig parsers don't, but custom
-/// ones might), each failed attempt pays one alloc; combine with
-/// the canonical arena-per-parse for cleanup.
+/// allocates on err (built-in parsers don't, but custom ones might),
+/// each failed attempt pays one alloc; combine with the canonical
+/// arena-per-parse for cleanup.
 ///
 /// Example:
 /// ```zig
