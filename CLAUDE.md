@@ -1,19 +1,18 @@
-# Parsil Zig — Claude Guidelines
+# Parsil — Claude Guidelines
 
 ## Project Overview
 
-Parsil Zig is a small, dependency-free parser-combinator library for Zig. Tiny parsers compose into bigger ones via combinators (`sequenceOf`, `choice`, `many`, `recursive`, …) and run on textual input (UTF-8 strings) or binary input (byte slices). Spans are first-class via `withSpan` / `spanMap`.
+Parsil is a small, dependency-free parser-combinator library for Zig. Tiny parsers compose into bigger ones via combinators (`sequenceOf`, `choice`, `many`, `recursive`, …) and run on textual input (UTF-8 strings) or binary input (byte slices). Spans are first-class via `withSpan` / `spanMap`.
 
-Parsil Zig is the parser foundation for downstream Gero projects: the Gero VM (Zig rewrite), the asm compiler, the future Gero language, and the gtx-16 native runtime. Every change here can land in those consumers — favor stability, clear semantics, and well-documented edge cases over feature breadth.
+Parsil is the parser foundation for downstream Gero projects: the Gero VM (Zig rewrite), the asm compiler, the future Gero language, and the gtx-16 native runtime. Every change here can land in those consumers — favor stability, clear semantics, and well-documented edge cases over feature breadth.
 
-What parsil-zig **is**:
+What parsil **is**:
 
 - A combinator kernel (`Parser(T)` + a set of primitive parsers and combinators under `src/parsers/`)
 - Pure Zig, zero runtime dependencies
 - Builds for Linux, macOS, Windows, and `wasm32-wasi`
-- The Zig sibling of [parsil](https://github.com/salty-max/parsil) (TypeScript), API-aligned with parsil-TS 3.0.0 (full parity is the v1.0.0 milestone)
 
-What parsil-zig **is not**:
+What parsil **is not**:
 
 - A grammar generator (PEG.js, nearley) — there is no grammar file format
 - A lexer/tokenizer toolkit — bytes/codepoints are the granularity by default
@@ -194,7 +193,7 @@ Use `kind` consistently per this decision tree:
   - Examples: `char` on `0xFF` (invalid UTF-8 leading byte); `stringLit` with `"\xZZ"`.
 - `.syntactic` — wrong byte/codepoint/structure at the cursor; the input is well-formed at the encoding layer but doesn't match the grammar.
   - Examples: `char('a')` on `'b'`; `digits` on `"abc"`; identifier-boundary violation in `keyword`.
-- `.semantic` — higher-level constraint violated by a consumer. parsil-zig itself almost never emits this; reserved for `errorMap` at the consumer boundary.
+- `.semantic` — higher-level constraint violated by a consumer. parsil itself almost never emits this; reserved for `errorMap` at the consumer boundary.
 - `.internal` — library bug or invariant violation (allocation failure, OOM, unreachable state). Should never reach end users.
 
 When in doubt, use `.syntactic` — it's the default and most common. Use `.incomplete` only when "more input would have made this succeed" is true.
@@ -213,7 +212,7 @@ The borrowed slice's lifetime is the caller's input — strictly more durable th
 ### Two layers
 
 1. **Library errors**: every primitive emits `ParseError` via `parseError(...)`. The `parser` field is the machine-readable identity; `message` is the user-readable description. Don't include `ParseError @ index N -> X:` prefix in the message — that's the formatter's job.
-2. **Consumer errors**: grammars built on top of parsil-zig call `.errorMap()` at meaningful boundaries (token, statement, expression) to attach their own structured shape. Inside a chain, errors propagate unchanged — only map at the boundary where end users see them.
+2. **Consumer errors**: grammars built on top of parsil call `.errorMap()` at meaningful boundaries (token, statement, expression) to attach their own structured shape. Inside a chain, errors propagate unchanged — only map at the boundary where end users see them.
 
 ### Never panic on parse failure
 
@@ -223,7 +222,7 @@ Parsers signal failure via the result envelope (`.{ .err = ... }`), not panics. 
 
 ### Always backtracks
 
-parsil-zig has no `try`/`cut`/commit. Every alternative in `choice` is a full backtrack. Document this in any combinator that adds new branching semantics; don't introduce committing semantics without a separate design discussion.
+parsil has no `try`/`cut`/commit. Every alternative in `choice` is a full backtrack. Document this in any combinator that adds new branching semantics; don't introduce committing semantics without a separate design discussion.
 
 #### Backtracking state contract
 
@@ -268,7 +267,7 @@ Every parser spec must cover at least:
 
 ## Strict Compiler Configuration
 
-parsil-zig is the parser foundation for the Gero ecosystem. A leaky type or silent UB here propagates into every consumer. Strictness up front pays back tenfold downstream.
+parsil is the parser foundation for the Gero ecosystem. A leaky type or silent UB here propagates into every consumer. Strictness up front pays back tenfold downstream.
 
 ### Build modes
 

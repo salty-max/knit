@@ -1,13 +1,13 @@
-# Parsil (Zig)
+# Parsil
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 [![Zig 0.16+](https://img.shields.io/badge/Zig-0.16%2B-f7a41d.svg)](https://ziglang.org/download/)
 
 A tiny, composable parser-combinator toolkit for Zig. Build complex grammars from small primitives (`char`, `digit`, `str`, `intLit`, …) via combinators (`sequenceOf`, `choice`, `many`, `chainl1`, …), with structured errors and opt-in multi-error recovery for grammar-author-friendly diagnostics.
 
-Parsil-zig is the Zig sibling of [parsil (TypeScript)](https://github.com/salty-max/parsil) — full API parity with parsil-TS 3.0.0, plus Zig-specific value-adds (`Diagnostic` / `runDiag` for multi-error reporting, a bit-level parser family).
+> Originally a TypeScript library — see [parsil on npm](https://www.npmjs.com/package/parsil) for the JavaScript/TypeScript runtime.
 
-## Why parsil-zig
+## Why parsil
 
 - **Zero dependencies** — pure Zig, no C, no FFI, no lockfile to chase.
 - **Comptime-monomorphic** — `Parser(T)` is a plain function pointer with no `*anyopaque` and no `anyerror`. Types flow through your grammar all the way to the result.
@@ -19,26 +19,40 @@ Parsil-zig is the Zig sibling of [parsil (TypeScript)](https://github.com/salty-
 
 - [Quick Start](#quick-start)
 - [Core Concepts](#core-concepts)
-- [Diagnostics & multi-error reporting](#diagnostics)
+- [Diagnostics & multi-error reporting](#diagnostics--multi-error-reporting)
 - [API Reference](#api-reference)
+  - [Primitive parsers](#primitive-parsers)
+  - [Char primitives (UTF-8 aware)](#char-primitives-utf-8-aware)
+  - [Digit primitives](#digit-primitives)
+  - [Letter primitives](#letter-primitives)
+  - [Whitespace primitives](#whitespace-primitives)
+  - [Sequencing combinators](#sequencing-combinators)
+  - [Alternative combinators](#alternative-combinators)
+  - [Repetition combinators](#repetition-combinators)
+  - [Error-context wrappers](#error-context-wrappers)
+  - [Lexeme combinators](#lexeme-combinators)
+  - [Util / debugging](#util--debugging)
+  - [Lang primitives](#lang-primitives)
+  - [Binary primitives](#binary-primitives)
+  - [Bit primitives](#bit-primitives)
+  - [Diagnostics helpers](#diagnostics-helpers)
+  - [Running](#running)
+  - [Combinator methods](#combinator-methods-all-comptime-self)
 - [Development](#development)
 - [Compatibility](#compatibility)
 - [Contributing](#contributing)
 
-<a id="quick-start"></a>
-
-<details open>
-<summary><b>Quick Start</b></summary>
+## Quick Start
 
 ```bash
-# Add parsil-zig to your project
+# Add parsil to your project
 zig fetch --save git+https://github.com/salty-max/parsil-zig
 ```
 
 In `build.zig`:
 
 ```zig
-const parsil = b.dependency("parsil_zig", .{
+const parsil = b.dependency("parsil", .{
     .target = target,
     .optimize = optimize,
 }).module("parsil");
@@ -79,12 +93,7 @@ The allocator is used for slice-producing combinators (`many`, `sepBy`, `sequenc
 
 Requires Zig **0.16.0** or later.
 
-</details>
-
-<a id="core-concepts"></a>
-
-<details>
-<summary><b>Core Concepts</b></summary>
+## Core Concepts
 
 - **`ParseState`** — holds the input slice and current cursor; `.advance(n)` clamps to input length and is overflow-safe.
 - **`ParseResult(T)`** — tagged union `.ok = { value: T, index: usize }` or `.err = ParseError`. `result.isOk()` is a type guard.
@@ -93,12 +102,7 @@ Requires Zig **0.16.0** or later.
 
 `Parser(T)` is a comptime-monomorphic function pointer — every parser captures its state via a comptime closure. Combinators that compose other parsers take their inputs as `comptime` parameters; runtime-assembled grammars use `recursive(thunk)`. There is no `*anyopaque` anywhere in the library.
 
-</details>
-
-<a id="diagnostics"></a>
-
-<details open>
-<summary><b>Diagnostics & multi-error reporting</b></summary>
+## Diagnostics & multi-error reporting
 
 By default, `parser.run(input, allocator)` returns the first error and stops. For grammars where you'd rather collect every malformed construct in one pass (asm, language compilers), wrap your top-level rule with `recoverAt` and run it via `runDiag` / `runDiagArena`:
 
@@ -135,12 +139,7 @@ parsed 3 statements; 1 recovered errors:
 
 The plain `.run` / `.runArena` paths leave the recovery sink unset — recovered errors are dropped silently, so existing single-error grammars pay zero perf cost.
 
-</details>
-
-<a id="api-reference"></a>
-
-<details open>
-<summary><b>API Reference</b></summary>
+## API Reference
 
 ### Primitive parsers
 
@@ -328,14 +327,9 @@ Sub-byte reads, namespaced under `bit.`. Track sub-byte position via `state.bit_
 | `.withSpan()` | Wrap result with byte offsets |
 | `.spanMap(U, build)` | Build a caller-shaped node from value + span |
 
-Full parity with parsil-TS 3.0.0 across the core, char, digit, letter, whitespace, sequence, choice, many/sepBy/endBy/repeatBetween, lookahead/recovery, lexeme, lang, binary, and bit families. See the [CHANGELOG](./CHANGELOG.md) for per-version detail.
+Coverage spans the core, char, digit, letter, whitespace, sequence, choice, many / sepBy / endBy / repeatBetween, lookahead / recovery, lexeme, lang, binary, and bit families. See the [CHANGELOG](./CHANGELOG.md) for per-version detail.
 
-</details>
-
-<a id="development"></a>
-
-<details>
-<summary><b>Development</b></summary>
+## Development
 
 Three external tools, all single-binary installs:
 
@@ -372,31 +366,19 @@ Common `zig build` steps:
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for branching, commit conventions, and the self-review loop.
 
-</details>
-
-<a id="compatibility"></a>
-
-<details>
-<summary><b>Compatibility</b></summary>
+## Compatibility
 
 - **Zig minimum**: 0.16.0 (pinned in `build.zig.zon`).
-- **Zero runtime dependencies** — pure Zig, no C deps, no FFI. Your `build.zig.zon` only adds `parsil-zig`.
+- **Zero runtime dependencies** — pure Zig, no C deps, no FFI. Your `build.zig.zon` only adds `parsil`.
 - **Cross-targets** compiled on every PR: `x86_64-linux`, `aarch64-macos`, `x86_64-windows`, `aarch64-windows`, `wasm32-wasi`.
 - **Test runs** in CI: native Linux, every release mode (Debug, ReleaseSafe, ReleaseFast, ReleaseSmall). The library is pure Zig with no OS-specific I/O — runtime tests on macOS/Windows are mostly redundant given the cross-target compile gate.
 - **SemVer** from v1.0.0 onward. Breaking changes bump the major; new parsers/combinators bump the minor; bug fixes bump the patch. Each release ships with a `CHANGELOG.md` section enumerating the user-visible deltas.
 
-</details>
-
-<a id="contributing"></a>
-
-<details>
-<summary><b>Contributing</b></summary>
+## Contributing
 
 - See [CONTRIBUTING.md](./CONTRIBUTING.md) for branching, commit format, the self-review loop, and the required toolchain.
 - Bug reports and feature ideas → open a GitHub issue.
 - New parsers and combinators → use the **parser** issue template; tag-team welcome on open issues.
-
-</details>
 
 ---
 
