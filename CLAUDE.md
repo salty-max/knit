@@ -1,18 +1,18 @@
-# Parsil — Claude Guidelines
+# Knit — Claude Guidelines
 
 ## Project Overview
 
-Parsil is a small, dependency-free parser-combinator library for Zig. Tiny parsers compose into bigger ones via combinators (`sequenceOf`, `choice`, `many`, `recursive`, …) and run on textual input (UTF-8 strings) or binary input (byte slices). Spans are first-class via `withSpan` / `spanMap`.
+Knit is a small, dependency-free parser-combinator library for Zig. Tiny parsers compose into bigger ones via combinators (`sequenceOf`, `choice`, `many`, `recursive`, …) and run on textual input (UTF-8 strings) or binary input (byte slices). Spans are first-class via `withSpan` / `spanMap`.
 
-Parsil is the parser foundation for downstream Gero projects: the Gero VM (Zig rewrite), the asm compiler, the future Gero language, and the gtx-16 native runtime. Every change here can land in those consumers — favor stability, clear semantics, and well-documented edge cases over feature breadth.
+Knit is the parser foundation for downstream Gero projects: the Gero VM (Zig rewrite), the asm compiler, the future Gero language, and the gtx-16 native runtime. Every change here can land in those consumers — favor stability, clear semantics, and well-documented edge cases over feature breadth.
 
-What parsil **is**:
+What knit **is**:
 
 - A combinator kernel (`Parser(T)` + a set of primitive parsers and combinators under `src/parsers/`)
 - Pure Zig, zero runtime dependencies
 - Builds for Linux, macOS, Windows, and `wasm32-wasi`
 
-What parsil **is not**:
+What knit **is not**:
 
 - A grammar generator (PEG.js, nearley) — there is no grammar file format
 - A lexer/tokenizer toolkit — bytes/codepoints are the granularity by default
@@ -37,7 +37,7 @@ Don't add a Node-shaped tool to solve a Zig-shaped problem. `build.zig` already 
 ```
 src/
 ├── core.zig                # Parser(T), ParseState, ParseResult, ParseError
-├── parsil.zig              # Public barrel (re-exports core + parsers)
+├── knit.zig              # Public barrel (re-exports core + parsers)
 ├── parsers/
 │   ├── <name>/
 │   │   ├── <name>.zig      # Implementation
@@ -70,7 +70,7 @@ LICENSE
 
 **Mirror rule**: every `src/parsers/<name>/<file>.zig` has a matching `tests/parsers/<name>/<file>.test.zig`. `scripts/check-mirror.sh` enforces this in CI. Adding a new parser without a matching spec fails CI.
 
-**`internal.zig` is the convention for private helpers** colocated with a parser dir (`src/parsers/<name>/internal.zig`). It is exempt from the mirror rule, must not be re-exported through `src/parsil.zig`, and is exercised through its consuming parsers' tests. Use it when two or more sibling parsers in the same dir share a helper — never reach across `src/parsers/<a>/` ↔ `src/parsers/<b>/` for shared code (extract to `src/util/` instead).
+**`internal.zig` is the convention for private helpers** colocated with a parser dir (`src/parsers/<name>/internal.zig`). It is exempt from the mirror rule, must not be re-exported through `src/knit.zig`, and is exercised through its consuming parsers' tests. Use it when two or more sibling parsers in the same dir share a helper — never reach across `src/parsers/<a>/` ↔ `src/parsers/<b>/` for shared code (extract to `src/util/` instead).
 
 ## Parser Design Principles
 
@@ -193,7 +193,7 @@ Use `kind` consistently per this decision tree:
   - Examples: `char` on `0xFF` (invalid UTF-8 leading byte); `stringLit` with `"\xZZ"`.
 - `.syntactic` — wrong byte/codepoint/structure at the cursor; the input is well-formed at the encoding layer but doesn't match the grammar.
   - Examples: `char('a')` on `'b'`; `digits` on `"abc"`; identifier-boundary violation in `keyword`.
-- `.semantic` — higher-level constraint violated by a consumer. parsil itself almost never emits this; reserved for `errorMap` at the consumer boundary.
+- `.semantic` — higher-level constraint violated by a consumer. knit itself almost never emits this; reserved for `errorMap` at the consumer boundary.
 - `.internal` — library bug or invariant violation (allocation failure, OOM, unreachable state). Should never reach end users.
 
 When in doubt, use `.syntactic` — it's the default and most common. Use `.incomplete` only when "more input would have made this succeed" is true.
@@ -212,7 +212,7 @@ The borrowed slice's lifetime is the caller's input — strictly more durable th
 ### Two layers
 
 1. **Library errors**: every primitive emits `ParseError` via `parseError(...)`. The `parser` field is the machine-readable identity; `message` is the user-readable description. Don't include `ParseError @ index N -> X:` prefix in the message — that's the formatter's job.
-2. **Consumer errors**: grammars built on top of parsil call `.errorMap()` at meaningful boundaries (token, statement, expression) to attach their own structured shape. Inside a chain, errors propagate unchanged — only map at the boundary where end users see them.
+2. **Consumer errors**: grammars built on top of knit call `.errorMap()` at meaningful boundaries (token, statement, expression) to attach their own structured shape. Inside a chain, errors propagate unchanged — only map at the boundary where end users see them.
 
 ### Never panic on parse failure
 
@@ -222,7 +222,7 @@ Parsers signal failure via the result envelope (`.{ .err = ... }`), not panics. 
 
 ### Always backtracks
 
-parsil has no `try`/`cut`/commit. Every alternative in `choice` is a full backtrack. Document this in any combinator that adds new branching semantics; don't introduce committing semantics without a separate design discussion.
+knit has no `try`/`cut`/commit. Every alternative in `choice` is a full backtrack. Document this in any combinator that adds new branching semantics; don't introduce committing semantics without a separate design discussion.
 
 #### Backtracking state contract
 
@@ -257,17 +257,17 @@ Every parser spec must cover at least:
 ## Imports
 
 - **Single-level relative imports** — sibling and parent imports use `../foo.zig` or `./foo.zig`. **Deep relatives are forbidden**: any `@import("../../...")` reaching past one parent is rejected by `scripts/check-imports.sh`.
-- **Public consumers** import only `parsil` (the module exposed by `build.zig`):
+- **Public consumers** import only `knit` (the module exposed by `build.zig`):
   ```zig
-  const P = @import("parsil");
+  const P = @import("knit");
   const r = P.str("hello").run("hello world", allocator);
   ```
 - **Inside `src/`**, importing from a sibling barrel (`@import("parsers/many/many.zig")`) goes through that dir's barrel file when one exists, never reach into a deeper internal file.
-- Tests use `@import("parsil")` (the module) for the public API, plus `@import("../util.zig")` (one level) for helpers — exactly one level of `..` is the rule.
+- Tests use `@import("knit")` (the module) for the public API, plus `@import("../util.zig")` (one level) for helpers — exactly one level of `..` is the rule.
 
 ## Strict Compiler Configuration
 
-parsil is the parser foundation for the Gero ecosystem. A leaky type or silent UB here propagates into every consumer. Strictness up front pays back tenfold downstream.
+knit is the parser foundation for the Gero ecosystem. A leaky type or silent UB here propagates into every consumer. Strictness up front pays back tenfold downstream.
 
 ### Build modes
 
@@ -522,7 +522,7 @@ Don't paraphrase the criteria. Don't merge them in your head. Walk the list as t
 
 ### Step 3: explicit acceptance checks (don't skip)
 
-- **Public API impact** — if the change touches public types or function signatures, walk the diff against `src/parsil.zig` (the barrel) and confirm every visible export is intentional. No `*anyopaque` leaks; no `anyerror` introductions.
+- **Public API impact** — if the change touches public types or function signatures, walk the diff against `src/knit.zig` (the barrel) and confirm every visible export is intentional. No `*anyopaque` leaks; no `anyerror` introductions.
 - **Downstream consumers** — if the API contract changes, check Gero's planned consumers (asm rewrite, language compiler) and call out adjustments in the PR description.
 - **Docs — every doc-affecting change must propagate everywhere it appears.** Concretely:
   - New public export (parser, combinator, helper, type) → README's **Parsers** section MUST list it. If the README quotes a list of exports, your PR adds yours to that list.

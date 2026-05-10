@@ -1,5 +1,5 @@
 const std = @import("std");
-const P = @import("parsil");
+const P = @import("knit");
 
 const a = std.testing.allocator;
 

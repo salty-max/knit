@@ -10,7 +10,7 @@ const core = @import("core");
 /// which is what breaks the construction-time cycle for grammars
 /// like `expr = num | "(" expr ")"`.
 ///
-/// **Caveat: no left recursion.** parsil is a recursive-descent
+/// **Caveat: no left recursion.** knit is a recursive-descent
 /// foundation; a left-recursive grammar like `expr = expr "+" num`
 /// will infinite-loop at parse time because the parser must
 /// consume to advance. Restructure with iteration instead

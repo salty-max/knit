@@ -1,5 +1,5 @@
 const std = @import("std");
-const P = @import("parsil");
+const P = @import("knit");
 
 // --- Parser(T) fluent methods -------------------------------------------
 
@@ -266,9 +266,9 @@ test "linecol: classic-Mac CR alone counts as a line break" {
 }
 
 test "linecol: top-level barrel export resolves the same helper" {
-    // Cross-check: `parsil.linecol(...)` (the new top-level export
+    // Cross-check: `knit.linecol(...)` (the new top-level export
     // added in this PR) is bit-for-bit the same function as
-    // `parsil.core.linecol(...)`. The barrel re-export preserves
+    // `knit.core.linecol(...)`. The barrel re-export preserves
     // behavior and adds an ergonomic top-level entry point.
     const lc1 = P.linecol("abc\ndef", 5);
     const lc2 = P.core.linecol("abc\ndef", 5);

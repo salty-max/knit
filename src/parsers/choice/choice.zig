@@ -5,7 +5,7 @@ const core = @import("core");
 /// error (the inner error with the highest `index`); ties are broken
 /// by earliest position in the list.
 ///
-/// **Full backtrack between alternatives.** parsil has no
+/// **Full backtrack between alternatives.** knit has no
 /// `try` / `cut` / commit semantics: the cursor is restored to the
 /// pre-`choice` position before each next attempt, even if a prior
 /// alternative consumed input before failing. To prevent this (e.g.

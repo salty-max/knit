@@ -1,6 +1,6 @@
-# Contributing to parsil
+# Contributing to knit
 
-Thanks for thinking of contributing! parsil is a small but rigorously-tooled project — the conventions below exist so that every change keeps the bar consistent.
+Thanks for thinking of contributing! knit is a small but rigorously-tooled project — the conventions below exist so that every change keeps the bar consistent.
 
 ## Toolchain
 

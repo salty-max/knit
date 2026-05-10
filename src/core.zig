@@ -30,7 +30,7 @@ pub const ParseErrorKind = enum {
     incomplete,
 
     /// Higher-level constraint violated by a consumer parser: name
-    /// not declared, type mismatch, semantic conflict. parsil itself
+    /// not declared, type mismatch, semantic conflict. knit itself
     /// rarely emits these (mostly consumer-emitted via `errorMap`
     /// at the boundary).
     semantic,
@@ -367,7 +367,7 @@ pub fn ParseResult(comptime T: type) type {
 /// return ok(matched_slice, state.index);
 /// ```
 ///
-/// Parsil splits `ParseState` (cursor + allocator) from
+/// Knit splits `ParseState` (cursor + allocator) from
 /// `ParseResult(T)` (the value envelope), so a single `ok` constructor
 /// is the only sugar callers usually need; the failure path stays as
 /// `.{ .err = parseError(...) }` since the explicit struct literal

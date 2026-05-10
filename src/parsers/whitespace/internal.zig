@@ -1,6 +1,6 @@
 const core = @import("core");
 
-/// True iff `b` is one of the four ASCII whitespace bytes parsil
+/// True iff `b` is one of the four ASCII whitespace bytes knit
 /// recognises: space, tab, line feed, carriage return.
 ///
 /// Vertical tab (`\v`) and form feed (`\f`) are deliberately

@@ -1,5 +1,5 @@
 const std = @import("std");
-const P = @import("parsil");
+const P = @import("knit");
 const u = @import("util");
 
 test "str: matches at beginning of input" {
