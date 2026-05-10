@@ -159,7 +159,6 @@ Requires Zig **0.16.0** or later.
 | Symbol | Type | Description |
 |--------|------|-------------|
 | `inContext(T, label, p)` | `Parser(T)` | Push `label` onto `err.context` outer-first; success transparent. |
-| `label(T, name, p)` | `Parser(T)` | Replace `err.parser` with `name`; other fields unchanged. |
 
 ### Lexeme combinators
 
@@ -175,7 +174,7 @@ Requires Zig **0.16.0** or later.
 | `tap(p, fn)` | `Parser(T)` | Run `p`, call `fn(*const ParseState)` for side-effects, return `p`'s result. Instrumentation seam. |
 | `debugLog(p, label)` | `Parser(T)` | Run `p`, print one-line trace to stderr prefixed with `label`. Allowlisted use of `std.debug.print`. |
 | `expect(p, msg)` | `Parser(T)` | On err, replace `err.message` with `msg` (other fields unchanged). |
-| `tag(p, name)` | `Parser(T)` | On err, replace `err.parser` with `name`. Inferred-type complement to `label`. |
+| `tag(p, name)` | `Parser(T)` | On err, replace `err.parser` with a domain-specific identity. Pair with `expect` to also rewrite the message. |
 | `apply(parsers, U, fn)` | `Parser(U)` | Sugar for `sequenceOf(parsers).map(U, fn)` — runs the comptime parser tuple, applies `fn` to the result tuple. |
 
 ### Lang primitives

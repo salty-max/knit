@@ -19,10 +19,6 @@ pub const succeed = @import("parsers/succeed.zig").succeed;
 /// `parsers/in-context.zig`.
 pub const inContext = @import("parsers/in-context.zig").inContext;
 
-/// Replace a parser's failure identity with a custom name. See
-/// `parsers/label.zig`.
-pub const label = @import("parsers/label.zig").label;
-
 /// Match a specific UTF-8 codepoint. See `parsers/char/char.zig`.
 pub const char = @import("parsers/char/char.zig").char;
 
@@ -217,8 +213,8 @@ pub const debugLog = @import("parsers/util/debug-log.zig").debugLog;
 pub const expect = @import("parsers/util/expect.zig").expect;
 
 /// Run `p`; on failure, replace the error's `parser` identity
-/// with `name`. Inferred-type complement to `label`. See
-/// `parsers/util/tag.zig`.
+/// with `name`. Pair with `expect` to also rewrite the message.
+/// See `parsers/util/tag.zig`.
 pub const tag = @import("parsers/util/tag.zig").tag;
 
 /// Run a comptime tuple of parsers, apply `fn_apply` to the
