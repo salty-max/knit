@@ -9,6 +9,9 @@ const core = @import("core");
 /// cursor at the failing position. No backtracking — wrap in
 /// `choice` if alternative bracketings need to be tried.
 ///
+/// Pass-through on the parser side — inherits allocator behavior
+/// from the inner parsers; `between` itself adds no allocation.
+///
 /// Types are inferred from the parsers themselves: `between(sep, p, sep)`
 /// returns `Parser(@TypeOf(p).Output)`.
 ///

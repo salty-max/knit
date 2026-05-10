@@ -13,8 +13,9 @@ const core = @import("core");
 /// at the failing position on err) is visible to `fn_tap`.
 ///
 /// Pure pass-through on the parser side: zero allocation, zero
-/// type change. `fn_tap`'s side-effects (printing, counter
-/// increments, etc.) are entirely the caller's responsibility.
+/// type change — inherits allocator behavior from `p`. `fn_tap`'s
+/// side-effects (printing, counter increments, etc.) are entirely
+/// the caller's responsibility.
 ///
 /// Example:
 /// ```zig
