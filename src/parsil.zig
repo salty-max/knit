@@ -125,6 +125,14 @@ pub const sepEndBy = @import("parsers/sep-by/sep-end-by.zig").sepEndBy;
 /// consumed. See `parsers/sep-by/sep-end-by-one.zig`.
 pub const sepEndByOne = @import("parsers/sep-by/sep-end-by-one.zig").sepEndByOne;
 
+/// Zero-or-more `(p sep)` pairs; every item requires a trailing
+/// `sep` (no leniency for the last). See `parsers/sep-by/end-by.zig`.
+pub const endBy = @import("parsers/sep-by/end-by.zig").endBy;
+
+/// One-or-more `(p sep)` pairs; same trailing-sep-required
+/// semantic. See `parsers/sep-by/end-by-one.zig`.
+pub const endByOne = @import("parsers/sep-by/end-by-one.zig").endByOne;
+
 /// Run `left`, `p`, `right` in order; keep only `p`'s value.
 /// Free-function complement to `Parser(T).between`. See
 /// `parsers/between/between.zig`.
@@ -279,6 +287,14 @@ pub const bit = struct {
     pub const zero = zero_mod.zero;
     /// Assert the next bit is `1`; consume it.
     pub const one = one_mod.one;
+
+    const int_be = @import("parsers/bit/int-be.zig");
+    const int_le = @import("parsers/bit/int-le.zig");
+
+    /// Read `n` bits as a two's-complement signed `i64`, big-endian.
+    pub const intBe = int_be.intBe;
+    /// Read `n` bits as a two's-complement signed `i64`, little-endian.
+    pub const intLe = int_le.intLe;
 };
 
 /// Fixed-width binary numeric primitives — `u8 / i8 / u16le /
