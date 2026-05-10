@@ -118,6 +118,21 @@ All slice-producing combinators (`many`, `sepBy`, `sequenceOf`, etc.) and the er
 
 The convenience method `Parser(T).runArena(input)` creates the arena, runs, and returns a wrapper that owns the arena (caller calls `.deinit()`).
 
+#### Allocator doc convention
+
+Every public parser's doc comment must declare its allocator behavior in one of three forms:
+
+- **Allocates** (e.g. `many`, `stringLit`):
+  > **Allocator note.** The result slice is owned by `state.allocator`. Use `runArena` for bulk cleanup.
+- **Always allocates, no fast path** (e.g. `stringLit` even on unescaped input):
+  > **Always allocates.** ...
+- **Borrows from input** (e.g. `digits`, `letters`, `binary.uXX`):
+  > Zero allocation; the result slice is borrowed from `state.input`.
+- **Pure pass-through** (e.g. `tap`, `between`, `chain`):
+  > inherit allocator behavior from the inner parser(s) — no caveat needed.
+
+Pick the right form when adding a new parser. The lint doesn't enforce phrasing, but reviewers will.
+
 ### Multi-error diagnostics
 
 `recoverAt` (#44) silently swallows errors when an anchor matches. For grammars that want to surface every malformed construct (asm, Gero language compilers), use `Parser(T).runDiag(input, allocator)` instead of `.run(...)`. `runDiag` returns `Diagnostic(T)` carrying:
@@ -169,6 +184,32 @@ return updateError(state, parseError(
 
 The string format `ParseError [outer > inner] @ index N -> <parser>: <message>` lives in `formatParseError(allocator, error) ![]u8`. Don't hand-build that string in primitives.
 
+#### Choosing `ParseErrorKind`
+
+Use `kind` consistently per this decision tree:
+
+- `.incomplete` — end-of-input reached mid-construct, OR truncated multi-byte UTF-8. The parser would have succeeded with more bytes.
+  - Examples: `char` at EOF; `str("hello")` on `"hel"`; `stringLit` without closing `"`; `binary.u32le` with 3 bytes left.
+- `.lexical` — invalid byte sequence at the encoding layer (bad UTF-8 leading byte, malformed escape).
+  - Examples: `char` on `0xFF` (invalid UTF-8 leading byte); `stringLit` with `"\xZZ"`.
+- `.syntactic` — wrong byte/codepoint/structure at the cursor; the input is well-formed at the encoding layer but doesn't match the grammar.
+  - Examples: `char('a')` on `'b'`; `digits` on `"abc"`; identifier-boundary violation in `keyword`.
+- `.semantic` — higher-level constraint violated by a consumer. parsil-zig itself almost never emits this; reserved for `errorMap` at the consumer boundary.
+- `.internal` — library bug or invariant violation (allocation failure, OOM, unreachable state). Should never reach end users.
+
+When in doubt, use `.syntactic` — it's the default and most common. Use `.incomplete` only when "more input would have made this succeed" is true.
+
+#### `actual` field convention
+
+When populating `ParseError.actual`, prefer borrowing a slice of `state.input` over allocating a copy:
+
+```zig
+.actual = state.input[state.index..][0..decoded.width],  // borrow ✓
+.actual = core.encodeCpAlloc(state.allocator, cp),       // allocate ✗ (removed in #98)
+```
+
+The borrowed slice's lifetime is the caller's input — strictly more durable than the arena. char-family parsers were refactored to borrow in #98; new parsers should follow the same pattern. Byte-boundary parsers (`digits`, `letters`, etc.) often skip `.actual` entirely since the consumer can read `state.input[state.index]` from the err's `.index`.
+
 ### Two layers
 
 1. **Library errors**: every primitive emits `ParseError` via `parseError(...)`. The `parser` field is the machine-readable identity; `message` is the user-readable description. Don't include `ParseError @ index N -> X:` prefix in the message — that's the formatter's job.
@@ -184,9 +225,21 @@ Parsers signal failure via the result envelope (`.{ .err = ... }`), not panics. 
 
 parsil-zig has no `try`/`cut`/commit. Every alternative in `choice` is a full backtrack. Document this in any combinator that adds new branching semantics; don't introduce committing semantics without a separate design discussion.
 
+#### Backtracking state contract
+
+Every combinator that backtracks (`choice`, `Parser(T).lookAhead`, `possibly`, `recoverAt`'s anchor scan) MUST save and restore **every mutable field** of `ParseState` before retrying or aborting. Today that's:
+
+- `index` — byte cursor
+- `bit_offset` — sub-byte cursor (added in #51; pre-#51 combinators didn't save it — fixed in #122)
+- `recovered_errs.items.len` — diagnostic-sink length (added in #112; pre-#112 combinators didn't save it — fixed in #122 follow-up)
+
+**When adding a new mutable field to `ParseState`**, you MUST update each backtracking combinator's save/restore block in lockstep. Forgetting one is a silent correctness bug — backtracking won't be observed in tests unless they explicitly mix the new field with backtracking combinators. Search for `saved_bit_offset` and `start_recovered_len` in the codebase as the canonical pattern.
+
+The `allocator` field is NOT saved/restored — it's caller-owned and stable across the parse.
+
 ### Adding context with `inContext`
 
-Wrap a parser with `inContext(label, p)` to push `label` onto `error.context` if it fails. Outer-first order: `inContext("outer", inContext("inner", p))` produces `error.context == &.{"outer", "inner"}`. The wrap-style complement of `label(name, p)` (which **replaces** the error). Prefer `inContext` to preserve diagnostics; reserve `label` for cases where the inner error is noise.
+Wrap a parser with `inContext(label, p)` to push `label` onto `error.context` if it fails. Outer-first order: `inContext("outer", inContext("inner", p))` produces `error.context == &.{"outer", "inner"}`. The wrap-style complement of `tag(p, name)` (which **replaces** `err.parser`). Prefer `inContext` to preserve diagnostics; reserve `tag` for cases where the inner error identity is noise.
 
 ### English-only error messages
 
