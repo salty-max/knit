@@ -60,6 +60,14 @@ pub fn recoverAt(comptime p: anytype, comptime anchors: anytype) core.Parser(?@T
                     const ar = anchor.parseFn(state);
                     state.index = saved;
                     if (ar == .ok) {
+                        // Push the original (now-recovered) err to the
+                        // diagnostic sink if one is attached; runDiag
+                        // sets it, single-error .run leaves it null.
+                        if (state.recovered_errs) |list| {
+                            var marked = original_err;
+                            marked.severity = .recovered;
+                            list.append(state.allocator, marked) catch {};
+                        }
                         // @as: lift null literal into ?T for the recovery branch's type.
                         return core.ok(@as(?T, null), state.index);
                     }

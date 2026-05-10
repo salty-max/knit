@@ -202,6 +202,8 @@ Requires Zig **0.16.0** or later.
 | `Parser(T).run(input, allocator)` | `ParseResult(T)` | Run a parser against an input string. |
 | `Parser(T).runArena(input, child)` | `!ArenaResult(T)` | Wrap an `ArenaAllocator` lifecycle; caller `.deinit()`s. |
 | `Parser(T).parse(*ParseState)` | `ParseResult(T)` | Run a parser against an existing state (for composition). |
+| `Parser(T).runDiag(input, allocator)` | `Diagnostic(T)` | Multi-error variant: collects every `recoverAt`-recovered err alongside the value (or fatal err). |
+| `Parser(T).runDiagArena(input, child)` | `!DiagnosticArenaResult(T)` | Arena-backed variant of `runDiag`. |
 
 ### Combinator methods (all `comptime self`)
 
